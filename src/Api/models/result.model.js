@@ -5,8 +5,8 @@ const resultSchema = new mongoose.Schema({
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   subject: { type: String, required: true },
   score: { type: Number, required: true },
-  term: { type: String, required: true }, // e.g., "First Term"
-  session: { type: String, required: true }, // e.g., "2025/2026"
+  term: { type: String, required: true }, 
+  session: { type: String, required: true }, 
   uploadedAt: { type: Date, default: Date.now }
 });
 

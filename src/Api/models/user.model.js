@@ -2,21 +2,36 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
+  // The big three required for signup
+  name: { type: String, required: [true, "Name is required"], trim: true },
+  email: { 
+    type: String, 
+    unique: true, 
+    required: [true, "Email is required"], 
+    lowercase: true, 
+    trim: true 
+  },
+  password: { 
+    type: String, 
+    required: [true, "Password is required"], 
+    select: false 
+  },
+  
   role: { 
     type: String, 
     enum: ['admin', 'teacher', 'student', 'parent'], 
     default: 'student' 
   },
-  parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now }
-});
+  isActive: { type: Boolean, default: true },
+  
+  // This links the Login to the Academic Profile
+  profile: { type: mongoose.Schema.Types.ObjectId, ref: 'StudentProfile' }
+}, { timestamps: true });
 
+// Password hashing logic
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 

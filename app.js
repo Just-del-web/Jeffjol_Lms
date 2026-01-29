@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import mainRouter from './index.routes.js';
+//import mainRouter from './src/Api/routes/index.routes.js';
 
 const app = express();
 
@@ -8,8 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes Delegation
-app.use('/api', mainRouter);
+// // Routes Delegation
+// app.use('/api', mainRouter);
 
 // Basic Health Check
 app.get('/', (req, res) => {

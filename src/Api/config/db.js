@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import config from './secret.config.js';
-import logger from '../Logging/logger.js';
+import logger from '../logging/logger.js';
 
 const dbLogger = logger.child({ service: "DB_SERVICE" });
 
@@ -20,7 +20,7 @@ const connectDB = async () => {
     dbLogger.warn('⚠️ MongoDB disconnected');
   });
 
-  return mongoose.connect(config.MONGODB_URI);
+  return mongoose.connect(config.MONGO_URI);
 };
 
 export default connectDB;

@@ -17,10 +17,6 @@ const JWT_COOKIE_CONFIG = {
     signed: config.JWT_COOKIE_SIGNED || false
 };
 
-/**
- * 💾 INTERNAL: PERSIST TOKEN RECORD
- * Stores signature and metadata in MongoDB for rotation tracking.
- */
 const storedToken = async (userId, token, intent, expireInMs, deviceInfo = {}) => {
     try {
         const sig = generateTokenSignature(userId.toString(), token);

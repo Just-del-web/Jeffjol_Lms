@@ -29,13 +29,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 const MAIN_DOMAIN = process.env.MAIN_DOMAIN || 'localhost';
 
 const config = {
-  // --- SERVER ---
+  
   NODE_ENV: process.env.NODE_ENV || 'development',
   IS_PROD: isProduction,
   PORT: parseInt(process.env.PORT, 10) || 5000,
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
 
-  MONGODB_URI: secretVault('mongodb_uri', 'MONGODB_URI', 'mongodb://localhost:27017/miva_lms', true),
+  MONGO_URI: secretVault('mongo_uri', 'MONGO_URI', 'mongodb+srv://jusiceobinna1_db_user:Juts2006$@cluster0.o4nbyis.mongodb.net/?appName=Cluster0', true),
 
   JWT_SECRET: secretVault('jwt_secret', 'JWT_SECRET', null, true),
   JWT_REFRESH_SECRET: secretVault('jwt_refresh_secret', 'JWT_REFRESH_SECRET', null, true),
