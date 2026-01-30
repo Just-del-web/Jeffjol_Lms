@@ -1,4 +1,4 @@
-import { CBTService } from "../services/cbt.service.js";
+import { CBTService } from "../service/exam.service.js";
 import { Question } from "../models/exam.model.js"; 
 import { successResponse, errorResponse } from "../utils/helper.js";
 import logger from "../logging/logger.js";

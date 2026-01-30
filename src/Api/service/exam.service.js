@@ -1,6 +1,6 @@
-import { Exam, Question } from '../models/ExamModels.js';
-import { Result } from '../models/Result.model.js';
-import StudentProfile from '../models/StudentProfile.js';
+import { Exam, Question } from '../models/exam.model.js';
+import { Result } from '../models/result.model.js';
+import StudentProfile from '../models/student_profile.model.js';
 import logger from '../logging/logger.js';
 
 const cbtLogger = logger.child({ service: "CBT_SERVICE" });

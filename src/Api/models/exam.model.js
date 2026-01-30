@@ -16,55 +16,44 @@ const questionSchema = new mongoose.Schema({
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' }
 }, { timestamps: true });
 
-export const Question = mongoose.model('Question', questionSchema);
-
+// --- EXAM MODEL ---
 const examSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   subject: { type: String, required: true },
-  
   duration: { type: Number, required: true }, 
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
-  
-  // Security Features
   sebRequired: { type: Boolean, default: true },
   shuffleQuestions: { type: Boolean, default: true },
   shuffleOptions: { type: Boolean, default: true },
   allowBacktrack: { type: Boolean, default: true }, 
-
   targetClass: { type: String, required: true }, 
   targetArm: [String], 
-
-  // Content
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-  
   totalMarks: Number,
   passPercentage: { type: Number, default: 50 },
-  
   status: { type: String, enum: ['draft', 'published', 'ongoing', 'closed'], default: 'draft' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-export const Exam = mongoose.model('Exam', examSchema);
-
+// --- RESULT MODEL ---
 const resultSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   exam: { type: mongoose.Schema.Types.ObjectId, ref: 'Exam', required: true },
-  
   score: { type: Number, required: true }, 
   percentage: { type: Number, required: true }, 
   totalPossible: { type: Number, required: true },
-  
   answers: [{
     questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Question' },
-    selectedOption: String, // e.g., 'B'
+    selectedOption: String, 
     isCorrect: Boolean,
     marksEarned: Number
   }],
-
   status: { type: String, enum: ['pass', 'fail'], required: true },
   submittedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-export const Result = mongoose.model('Result', resultSchema);
+export const Question = mongoose.models.Question || mongoose.model('Question', questionSchema);
+export const Exam = mongoose.models.Exam || mongoose.model('Exam', examSchema);
+export const Result = mongoose.models.Result || mongoose.model('Result', resultSchema);

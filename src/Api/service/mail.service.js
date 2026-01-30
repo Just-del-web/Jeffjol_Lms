@@ -1,4 +1,4 @@
-import { User } from "../models/User.js";
+import { User } from "../models/user.model.js";
 import logger from "../logging/logger.js";
 import Queue from 'bull';
 import config from '../config/secret.config.js';

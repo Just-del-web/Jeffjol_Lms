@@ -1,4 +1,4 @@
-import { PaymentService } from "../services/payment.service.js";
+import { PaymentService } from "../service/payment.service.js";
 import { successResponse, errorResponse } from "../utils/helper.js";
 import logger from "../logging/logger.js";
 

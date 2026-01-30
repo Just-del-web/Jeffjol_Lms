@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as PaymentController from "../controller/payment.controller.js";
+import * as PaymentController from "../controllers/payment.controller.js";
 import { authenticate, restrictTo } from "../middleware/auth.middleware.js";
 import { verifyPayerRelationship } from "../middleware/payment.middleware.js"; 
 import { receiptUpload } from "../utils/cloudinary.util.js";

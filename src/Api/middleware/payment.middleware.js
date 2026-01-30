@@ -1,4 +1,4 @@
-import StudentProfile from '../models/StudentProfile.js';
+import StudentProfile from '../models/student_profile.model.js';
 import { errorResponse } from '../utils/helper.js';
 
 export const verifyPayerRelationship = async (req, res, next) => {

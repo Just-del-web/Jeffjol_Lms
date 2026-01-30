@@ -1,5 +1,5 @@
 import { Payment } from '../models/payment.model.js';
-import StudentProfile from '../models/StudentProfile.js';
+import StudentProfile from '../models/student_profile.model.js';
 import { uploadToCloudinary } from '../utils/cloudinary.util.js';
 import logger from '../logging/logger.js';
 import { BursaryService } from './bursary.service.js'; 

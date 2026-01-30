@@ -5,38 +5,44 @@ const resultSchema = new mongoose.Schema({
   subject: { type: String, required: true },
   
   caScore: { type: Number, default: 0, min: 0, max: 40 }, 
-  examScore: { type: Number, default: 0, min: 0, max: 70 }, 
-  totalScore: { type: Number, required: true },
+  examScore: { type: Number, default: 0, min: 0, max: 60 }, 
+  totalScore: { type: Number, default: 0 },
   
-  grade: { type: String, enum: ['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9', 'A', 'B', 'C', 'P', 'F'] },
+  grade: { type: String, enum: ['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] },
   
-  // Context
   term: { type: String, enum: ['First', 'Second', 'Third'], required: true },
   session: { type: String, required: true }, 
   classAtTime: { type: String, required: true }, 
 
-  // Feedback
+  batchId: { type: String, index: true },
+
   teacherRemarks: { type: String, default: "Good performance, keep it up." },
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   
-  // For CBT automated results
   isCbtResult: { type: Boolean, default: false },
   examRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }
 
 }, { timestamps: true });
 
-// Auto-calculate total and assign grade before saving
 resultSchema.pre('save', function (next) {
   this.totalScore = this.caScore + this.examScore;
   
-  if (this.totalScore >= 75) this.grade = 'A1';
-  else if (this.totalScore >= 70) this.grade = 'B2';
-  else if (this.totalScore >= 65) this.grade = 'B3';
-  else if (this.totalScore >= 50) this.grade = 'C6';
-  else if (this.totalScore >= 40) this.grade = 'D7';
+  const total = this.totalScore;
+  if (total >= 75) this.grade = 'A1';
+  else if (total >= 70) this.grade = 'B2';
+  else if (total >= 65) this.grade = 'B3';
+  else if (total >= 60) this.grade = 'C4';
+  else if (total >= 55) this.grade = 'C5';
+  else if (total >= 50) this.grade = 'C6';
+  else if (total >= 45) this.grade = 'D7';
+  else if (total >= 40) this.grade = 'E8';
   else this.grade = 'F9';
   
+  if (!this.batchId) {
+    this.batchId = `${this.student}_${this.term}_${this.session}`;
+  }
+
   next();
 });
 
-export const Result = mongoose.model('Result', resultSchema);
+export const Result = mongoose.models.Result || mongoose.model('Result', resultSchema);
