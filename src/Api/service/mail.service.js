@@ -125,4 +125,33 @@ export class MailService {
       return errorResponse(500, "Broadcast system failure.");
     }
   }
+
+  async sendPaymentReceipt({ to, firstName, amount, term, session, receiptBuffer, filename }) {
+    try {
+      await emailQueue.add("sendReceipt", {
+        to: to, 
+        subject: `Payment Receipt: ${term} Term - Jeffjol High School`,
+        templateName: "payment_receipt",
+        templateData: { 
+          firstName, 
+          amount: amount.toLocaleString(), 
+          term, 
+          session 
+        },
+
+        attachments: [
+          {
+            filename: filename,
+            content: receiptBuffer.toString('base64'), 
+            contentType: 'application/pdf',
+            encoding: 'base64'
+          }
+        ]
+      }, { attempts: 5, backoff: { type: 'exponential', delay: 5000 } });
+
+      mailLogger.info(`Payment receipt queued for: ${to}`);
+    } catch (err) {
+      mailLogger.error(`Receipt Email Error: ${err.message}`);
+    }
+  }
 }

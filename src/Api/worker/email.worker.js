@@ -10,17 +10,26 @@ const emailQueue = new Queue('school-email-delivery', config.REDIS_URL || 'redis
 
 
 const processMailJob = async (job) => {
-  const { to, subject, templateName, templateData } = job.data;
+  const { to, subject, templateName, templateData, attachments } = job.data;
 
   try {
     const html = await renderTemplate(templateName, templateData);
 
-    const { data, error } = await resend.emails.send({
+    const emailPayload = {
       from: config.MAIL_FROM || 'Jeffjol High School <noreply@jeffjol.com>',
-      to: [to],
+      to: Array.isArray(to) ? to : [to], 
       subject,
-      html
-    });
+      html,
+    };
+
+    if (attachments && attachments.length > 0) {
+      emailPayload.attachments = attachments.map(att => ({
+        filename: att.filename,
+        content: Buffer.from(att.content, 'base64'),
+      }));
+    }
+
+    const { data, error } = await resend.emails.send(emailPayload);
 
     if (error) {
       if (error.status === 429) {
@@ -47,13 +56,13 @@ export const initMailWorker = () => {
     "sendExamClearance",  
     "sendResultPublished", 
     "sendPasswordReset",   
-    "sendSchoolBroadcast"  
+    "sendSchoolBroadcast",
+    "sendPaymentReceipt" 
   ];
 
   jobTypes.forEach(type => {
     emailQueue.process(type, 10, processMailJob);
   });
-
   emailQueue.process(10, processMailJob);
 
   emailQueue.on('completed', (job) => {

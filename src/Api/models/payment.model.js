@@ -3,10 +3,24 @@ import mongoose from 'mongoose';
 const paymentSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   amount: { type: Number, required: true },
-  reference: { type: String, unique: true, required: true },
-  status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
-  purpose: { type: String, default: 'Tuition' },
-  paidAt: Date
-});
+  feeType: { type: String, enum: ['Tuition', 'Exam Fee', 'Uniform', 'Other'], default: 'Tuition' },
+  
+  paymentMethod: { type: String, enum: ['Bank Transfer', 'Cash', 'POS'], required: true },
+  transactionReference: { type: String, unique: true }, 
+  proofOfPayment: { type: String }, 
+  
+  status: { 
+    type: String, 
+    enum: ['pending', 'verified', 'rejected'], 
+    default: 'pending' 
+  },
+
+  term: { type: String, required: true },
+  session: { type: String, required: true },
+  
+  verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  verifiedAt: { Date },
+  rejectionReason: { type: String } 
+}, { timestamps: true });
 
 export const Payment = mongoose.model('Payment', paymentSchema);
