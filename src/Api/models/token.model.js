@@ -8,31 +8,29 @@ const tokenSchema = new mongoose.Schema({
   },
   token: {
     type: String,
-    required: true,
-    index: true 
+    required: true
   },
-  sig: { 
-    type: String, 
-    required: true 
-  }, 
+  sig:{
+    type: String,
+    required: true
+
+  },
   intent: {
     type: String,
     required: true,
-    enum: ["password-reset", "email-verification", "refresh-token"]
-  },
-  isUsed: { 
-    type: Boolean, 
-    default: false 
+    enum: [ "password-reset", "email-verification", "refresh-token" ]
   },
   expiresAt: {
     type: Date,
-    required: true
+    required: true,
+    default: () => Date.now()
   }
-}, { timestamps: true });
+});
 
 tokenSchema.index({ userId: 1, intent: 1 });
 
 tokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-const Token = mongoose.model("Token", tokenSchema);
-export default Token;
+const tokenModel = mongoose.model("Token", tokenSchema);
+
+export default tokenModel;
