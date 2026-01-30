@@ -3,14 +3,14 @@ import mongoose from 'mongoose';
 // --- QUESTION BANK MODEL ---
 const questionSchema = new mongoose.Schema({
   text: { type: String, required: true },
-  image: { type: String }, // URL for diagrams/charts
+  image: { type: String }, 
   type: { type: String, enum: ['multiple-choice', 'theory'], default: 'multiple-choice' },
   options: [{
     text: { type: String, required: true },
     letter: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] }
   }],
-  correctAnswer: { type: String, required: true }, // Store the letter (e.g., 'B')
-  explanation: String, // Shown to students AFTER the exam is closed
+  correctAnswer: { type: String, required: true }, 
+  explanation: String, 
   marks: { type: Number, default: 2 },
   subject: { type: String, required: true, index: true },
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' }
@@ -18,14 +18,12 @@ const questionSchema = new mongoose.Schema({
 
 export const Question = mongoose.model('Question', questionSchema);
 
-// --- EXAM (ASSESSMENT) MODEL ---
 const examSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   subject: { type: String, required: true },
   
-  // Timing & Access
-  duration: { type: Number, required: true }, // in minutes
+  duration: { type: Number, required: true }, 
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
   
@@ -33,11 +31,10 @@ const examSchema = new mongoose.Schema({
   sebRequired: { type: Boolean, default: true },
   shuffleQuestions: { type: Boolean, default: true },
   shuffleOptions: { type: Boolean, default: true },
-  allowBacktrack: { type: Boolean, default: true }, // Can students go back to previous questions?
+  allowBacktrack: { type: Boolean, default: true }, 
 
-  // Targeting (Which class is taking this?)
-  targetClass: { type: String, required: true }, // e.g., 'SS3'
-  targetArm: [String], // e.g., ['A', 'Science']
+  targetClass: { type: String, required: true }, 
+  targetArm: [String], 
 
   // Content
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],

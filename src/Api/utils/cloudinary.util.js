@@ -39,6 +39,11 @@ export const receiptUpload = multer({
   }
 });
 
+export const academicContentUpload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, 
+});
+
 export const deleteFromCloudinary = async (publicId) => {
   if (!publicId) return;
   return await cloudinary.uploader.destroy(publicId);

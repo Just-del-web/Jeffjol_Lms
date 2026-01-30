@@ -1,33 +1,69 @@
-import { Course } from '../models/Course.js';
-import { Enrollment } from '../models/Enrollment.js';
-import { Result } from '../models/Result.js';
+import { Content } from '../models/Content.model.js';
+import { uploadToCloudinary } from '../utils/cloudinary.util.js';
+import Tesseract from 'tesseract.js';
+import logger from '../logging/logger.js';
 
-export const registerCourses = async (studentId, courseIds, session) => {
-  const enrollments = courseIds.map(courseId => ({
-    student: studentId,
-    course: courseId,
-    academicYear: session,
-    status: 'registered'
-  }));
-  return await Enrollment.insertMany(enrollments);
-};
+const academicLogger = logger.child({ service: "ACADEMIC_SERVICE" });
 
-export const uploadStudentResult = async (teacherId, data) => {
-  const { studentId, subject, score, term, session } = data;
+export class AcademicService {
   
-  let grade = 'F';
-  if (score >= 70) grade = 'A';
-  else if (score >= 60) grade = 'B';
-  else if (score >= 50) grade = 'C';
-  else if (score >= 45) grade = 'D';
+  async uploadAcademicMaterial(teacherId, data, file) {
+    let uploadResult = {};
+    let extractedText = "";
 
-  return await Result.create({
-    student: studentId,
-    teacher: teacherId,
-    subject,
-    score,
-    grade,
-    term,
-    session
-  });
-};
+    if (file) {
+      const resourceType = data.contentType === 'video' ? 'video' : 'raw';
+      uploadResult = await uploadToCloudinary(file.buffer, 'academic_materials', resourceType);
+
+      // OCR Logic: Primary focus is turning the image into readable digital text
+      if (data.isScannedNote === 'true' && file.mimetype.startsWith('image/')) {
+        academicLogger.info("Initiating Tesseract OCR scanning...");
+        const { data: { text } } = await Tesseract.recognize(file.buffer, 'eng');
+        
+        // Clean text: remove multiple newlines and trim whitespace for better display
+        extractedText = text.replace(/\n\s*\n/g, '\n').trim();
+      }
+    }
+
+    return await Content.create({
+      ...data,
+      uploadedBy: teacherId,
+      fileUrl: uploadResult.secure_url,
+      cloudinaryId: uploadResult.public_id,
+      rawText: extractedText // This is the "Actual Text" the student reads
+    });
+  }
+
+  // Teacher can fix OCR typos here
+  async updateMaterialContent(contentId, teacherId, updateData) {
+    return await Content.findOneAndUpdate(
+      { _id: contentId, uploadedBy: teacherId },
+      { $set: updateData },
+      { new: true }
+    );
+  }
+
+  async getNoteForReading(contentId) {
+    return await Content.findById(contentId)
+      .populate('uploadedBy', 'firstName lastName')
+      .lean();
+  }
+
+  async getStudentMaterials(className, subject = null) {
+    const query = { targetClass: className };
+    if (subject) query.subject = subject;
+
+    return await Content.find(query)
+      .populate('uploadedBy', 'firstName lastName')
+      .select('-rawText') 
+      .sort({ createdAt: -1 });
+  }
+
+  async scheduleLiveClass(teacherId, classData) {
+    return await Content.create({
+      ...classData,
+      contentType: 'live_class',
+      uploadedBy: teacherId
+    });
+  }
+}
