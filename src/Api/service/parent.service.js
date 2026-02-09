@@ -1,19 +1,34 @@
-import { User } from '../models/User.js';
-import { Result } from '../models/Result.js';
-import { Payment } from '../models/Payment.js';
+import { User } from '../models/user.model.js';
+import { Result } from '../models/result.model.js';
+import { Payment } from '../models/payment.model.js';
 
-export const getChildAcademicSummary = async (parentId) => {
-  const child = await User.findOne({ parentId });
-  if (!child) throw new Error('No child linked to this parent account');
+export const getParentDashboardData = async (parentId) => {
+  
+  const children = await User.find({ parent: parentId }).lean();
+  
+  if (!children || children.length === 0) {
+    throw new Error('No children linked to this parent account');
+  }
 
-  const [results, payments] = await Promise.all([
-    Result.find({ student: child._id }).sort({ uploadedAt: -1 }),
-    Payment.find({ student: child._id }).sort({ createdAt: -1 })
-  ]);
+  const familyData = await Promise.all(children.map(async (child) => {
+    const [results, payments] = await Promise.all([
+      Result.find({ student: child._id }).sort({ createdAt: -1 }).limit(5),
+      Payment.find({ student: child._id }).sort({ createdAt: -1 }).limit(5)
+    ]);
 
-  return {
-    childProfile: { name: child.name, email: child.email },
-    academicHistory: results,
-    financialHistory: payments
-  };
+    return {
+      _id: child._id,
+      firstName: child.firstName,
+      lastName: child.lastName,
+      currentClass: child.currentClass || "SS1",
+      email: child.email,
+      academicHistory: results,
+      financialHistory: payments,
+      performanceAverage: results.length > 0 
+        ? (results.reduce((acc, curr) => acc + curr.totalScore, 0) / results.length).toFixed(1) 
+        : "N/A"
+    };
+  }));
+
+  return familyData;
 };

@@ -1,38 +1,39 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Loader2, UserPlus, GraduationCap, Users } from "lucide-react";
+import { Loader2, GraduationCap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import axios from "axios";
+import api from "@/lib/api";
 
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState("student");
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    currentClass: "", // Only for students
+  const [formData, setFormData] = useState({ 
+    firstName: "", 
+    lastName: "", 
+    email: "", 
+    password: "", 
+    currentClass: "",
+    gender: "" 
   });
-
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    
+    if (!formData.gender) return toast.error("Please select your gender.");
+    if (role === "student" && !formData.currentClass) return toast.error("Please select your class level.");
 
+    setLoading(true);
     try {
-      const payload = { ...formData, role };
-      const res = await axios.post("/api/v1/auth/register", payload);
-      
-      toast.success("Account created! Please check your email for verification.");
-      navigate("/login");
+      const res = await api.post("/auth/signup", { ...formData, role });
+      navigate("/verify-otp", { state: { userId: res.data.data.userId } });
+      toast.success("Signup successful! Check your terminal for the OTP.");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Registration failed.");
+      toast.error(err.response?.data?.message || "Signup failed.");
     } finally {
       setLoading(false);
     }
@@ -40,84 +41,72 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-lg border-slate-200 shadow-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-indigo-900">Join Jeffjol High</CardTitle>
-          <CardDescription>Create your account to access the learning portal</CardDescription>
+      <Card className="w-full max-w-lg border-slate-200 shadow-2xl rounded-3xl overflow-hidden">
+        <CardHeader className="text-center bg-white border-b pb-8 pt-8">
+          <CardTitle className="text-3xl font-black italic text-indigo-900 tracking-tighter uppercase">Join Jeffjol High</CardTitle>
+          <CardDescription className="font-medium text-slate-500">Create your account to access the learning portal</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-8">
           <form onSubmit={handleSignup} className="space-y-4">
             
-            {/* ROLE SELECTOR */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button
-                type="button"
-                onClick={() => setRole("student")}
-                className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${role === 'student' ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-slate-400'}`}
-              >
-                <GraduationCap size={24} className="mb-2" />
-                <span className="text-xs font-bold uppercase">Student</span>
+            <div className="grid grid-cols-2 gap-4">
+              <button type="button" onClick={() => setRole("student")} className={`p-4 rounded-2xl border-2 transition-all ${role === 'student' ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-slate-400'}`}>
+                <GraduationCap size={24} className="mx-auto mb-2" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Student</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setRole("parent")}
-                className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${role === 'parent' ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-slate-400'}`}
-              >
-                <Users size={24} className="mb-2" />
-                <span className="text-xs font-bold uppercase">Parent</span>
+              <button type="button" onClick={() => setRole("parent")} className={`p-4 rounded-2xl border-2 transition-all ${role === 'parent' ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-slate-400'}`}>
+                <Users size={24} className="mx-auto mb-2" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Parent</span>
               </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Input placeholder="First Name" required onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="rounded-xl border-slate-200 h-12" />
+              <Input placeholder="Last Name" required onChange={(e) => setFormData({...formData, lastName: e.target.value})} className="rounded-xl border-slate-200 h-12" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-slate-500">First Name</label>
-                <Input required onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-slate-500">Last Name</label>
-                <Input required onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
-              </div>
+              <Input type="email" placeholder="Email Address" required onChange={(e) => setFormData({...formData, email: e.target.value})} className="rounded-xl border-slate-200 h-12" />
+              
+              <Select onValueChange={(v) => setFormData({...formData, gender: v})}>
+                <SelectTrigger className="rounded-xl border-slate-200 h-12 bg-white">
+                  <SelectValue placeholder="Gender" />
+                </SelectTrigger>
+                {/* Fixed transparency by adding bg-white and z-index */}
+                <SelectContent className="bg-white border-slate-200 shadow-xl z-[100]">
+                  <SelectItem value="Male" className="cursor-pointer">Male</SelectItem>
+                  <SelectItem value="Female" className="cursor-pointer">Female</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-slate-500">Email Address</label>
-              <Input type="email" required onChange={(e) => setFormData({...formData, email: e.target.value})} />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-slate-500">Password</label>
-              <Input type="password" required onChange={(e) => setFormData({...formData, password: e.target.value})} />
-            </div>
-
-            {/* CONDITIONAL STUDENT FIELD */}
+            <Input type="password" placeholder="Password" required onChange={(e) => setFormData({...formData, password: e.target.value})} className="rounded-xl border-slate-200 h-12" />
+            
             {role === "student" && (
-              <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                <label className="text-xs font-bold uppercase text-slate-500">Current Class</label>
-                <Select onValueChange={(v) => setFormData({...formData, currentClass: v})}>
-                  <SelectTrigger className="bg-slate-50/50">
-                    <SelectValue placeholder="Select your class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="JSS1">JSS 1</SelectItem>
-                    <SelectItem value="JSS2">JSS 2</SelectItem>
-                    <SelectItem value="SS1">SS 1</SelectItem>
-                    <SelectItem value="SS2">SS 2</SelectItem>
-                    <SelectItem value="SS3">SS 3</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select onValueChange={(v) => setFormData({...formData, currentClass: v})}>
+                <SelectTrigger className="rounded-xl border-slate-200 h-12 bg-white">
+                  <SelectValue placeholder="Select Class Level" />
+                </SelectTrigger>
+                {/* Fixed transparency by adding bg-white and z-index */}
+                <SelectContent className="bg-white border-slate-200 shadow-xl z-[100]">
+                  <SelectItem value="JSS1">JSS 1</SelectItem>
+                  <SelectItem value="JSS2">JSS 2</SelectItem>
+                  <SelectItem value="JSS3">JSS 3</SelectItem>
+                  <SelectItem value="SS1">SS 1</SelectItem>
+                  <SelectItem value="SS2">SS 2</SelectItem>
+                  <SelectItem value="SS3">SS 3</SelectItem>
+                </SelectContent>
+              </Select>
             )}
 
-            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 py-6 mt-4" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create Account"}
+            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 h-14 rounded-2xl font-black uppercase italic tracking-tighter text-lg shadow-lg shadow-indigo-100 mt-2" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" /> : "Initialize Account"}
             </Button>
-          </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-slate-500">
-              Already have an account? <Link to="/login" className="text-indigo-600 font-bold hover:underline">Login</Link>
-            </p>
-          </div>
+            <div className="text-center mt-4 pb-2">
+              <Link to="/login" className="text-xs font-bold text-slate-400 hover:text-indigo-600 uppercase tracking-tighter transition-colors">Already have an account? Login</Link>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

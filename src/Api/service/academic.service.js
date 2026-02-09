@@ -1,4 +1,4 @@
-import { Content } from '../models/Content.model.js';
+import { Content } from '../models/content.model.js';
 import { uploadToCloudinary } from '../utils/cloudinary.util.js';
 import Tesseract from 'tesseract.js';
 import logger from '../logging/logger.js';
@@ -15,12 +15,10 @@ export class AcademicService {
       const resourceType = data.contentType === 'video' ? 'video' : 'raw';
       uploadResult = await uploadToCloudinary(file.buffer, 'academic_materials', resourceType);
 
-      // OCR Logic: Primary focus is turning the image into readable digital text
       if (data.isScannedNote === 'true' && file.mimetype.startsWith('image/')) {
         academicLogger.info("Initiating Tesseract OCR scanning...");
         const { data: { text } } = await Tesseract.recognize(file.buffer, 'eng');
         
-        // Clean text: remove multiple newlines and trim whitespace for better display
         extractedText = text.replace(/\n\s*\n/g, '\n').trim();
       }
     }
@@ -30,11 +28,10 @@ export class AcademicService {
       uploadedBy: teacherId,
       fileUrl: uploadResult.secure_url,
       cloudinaryId: uploadResult.public_id,
-      rawText: extractedText // This is the "Actual Text" the student reads
+      rawText: extractedText 
     });
   }
 
-  // Teacher can fix OCR typos here
   async updateMaterialContent(contentId, teacherId, updateData) {
     return await Content.findOneAndUpdate(
       { _id: contentId, uploadedBy: teacherId },

@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema({
     default: 'student' 
   },
   
+  parent: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
   isVerified: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   tokenVersion: { type: Number, default: 0 },
@@ -35,19 +37,28 @@ const userSchema = new mongoose.Schema({
 
   profile: { type: mongoose.Schema.Types.ObjectId, ref: 'StudentProfile' },
 
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
 
 userSchema.virtual('name').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    throw error;
+  }
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false; 
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

@@ -56,6 +56,7 @@ export class AuthService {
             {
               user: user._id,
               currentClass: data.currentClass || "SS1",
+              gender: data.gender,
               classArm: data.classArm || "A",
               academicYear: "2024/2025",
               schoolId: data.schoolId,
@@ -76,6 +77,7 @@ export class AuthService {
         "signup-verification"
       );
 
+      // Log verification code to terminal for development
       console.log(`\n[SECURITY] Verification OTP for ${user.email}: ${otp}\n`);
 
       authLogger.info(`Signup successful for User ID: ${user._id}`);
@@ -84,7 +86,7 @@ export class AuthService {
         userId: user._id,
         email: user.email,
         requiresVerification: true,
-      };
+        };
     });
   }
 
@@ -150,38 +152,37 @@ export class AuthService {
 
     const { otp } = await helper.createVerificationToken(user._id, null, "password-reset");
     
+    // Log verification code to terminal for development
+    console.log(`\n[SECURITY] Password Reset OTP for ${user.email}: ${otp}\n`);
+
     authLogger.info(`Password reset requested for ${email}`);
     return { message: "Reset code sent to email", dev_otp: otp };
   }
 
+  async refreshSession(refreshToken) {
+    try {
+      const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
+      const user = await User.findById(decoded.id).select("+tokenVersion");
 
+      if (!user || user.tokenVersion !== decoded.tokenVersion) {
+        throw new Error("INVALID_SESSION");
+      }
 
-async refreshSession(refreshToken) {
-  try {
-    const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.id).select("+tokenVersion");
+      const accessToken = jwt.sign(
+        { id: user._id, role: user.role, tokenVersion: user.tokenVersion },
+        config.JWT_SECRET,
+        { expiresIn: '15m' } 
+      );
 
-    if (!user || user.tokenVersion !== decoded.tokenVersion) {
-      throw new Error("INVALID_SESSION");
+      return { accessToken };
+    } catch (err) {
+      throw new Error("REFRESH_FAILED");
     }
-
-    const accessToken = jwt.sign(
-      { id: user._id, role: user.role, tokenVersion: user.tokenVersion },
-      config.JWT_SECRET,
-      { expiresIn: '15m' } 
-    );
-
-    return { accessToken };
-  } catch (err) {
-    throw new Error("REFRESH_FAILED");
   }
-}
 
-
-async logout(userId) {
-  return await User.findByIdAndUpdate(userId, { 
-    $inc: { tokenVersion: 1 } 
-  });
-}
-
+  async logout(userId) {
+    return await User.findByIdAndUpdate(userId, { 
+      $inc: { tokenVersion: 1 } 
+    });
+  }
 }

@@ -12,17 +12,23 @@ const redisClient = new Redis({
 
 redisClient.on('error', (err) => logger.error('Redis RateLimit Client Error:', err));
 
+
 export const globalLimiter = rateLimit({
   store: new RedisStore({
     sendCommand: (...args) => redisClient.call(...args),
     prefix: 'rl:global:',
   }),
-  windowMs: 15 * 60 * 1000, 
+  windowMs: 15 * 60 * 1000,
   max: 500, 
-  message: errorResponse(429, "Too many requests. Please try again in 15 minutes.").data,
+  handler: (req, res, next, options) => {
+    return res.status(options.statusCode).json(
+      errorResponse(options.statusCode, "Too many requests. Please try again in 15 minutes.")
+    );
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
+
 
 export const authLimiter = rateLimit({
   store: new RedisStore({
@@ -32,7 +38,12 @@ export const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, 
   max: 6, 
   skipSuccessfulRequests: true, 
-  message: errorResponse(429, "Security Alert: Too many failed login attempts. This IP is blocked for 1 hour.").data,
+  handler: (req, res, next, options) => {
+    logger.warn(`Auth Rate Limit Exceeded for IP: ${req.ip}`);
+    return res.status(options.statusCode).json(
+      errorResponse(options.statusCode, "Security Alert: Too many failed login attempts. This IP is blocked for 1 hour.")
+    );
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });

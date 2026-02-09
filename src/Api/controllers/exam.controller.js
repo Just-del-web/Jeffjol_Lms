@@ -6,8 +6,8 @@ import logger from "../logging/logger.js";
 const cbtLogger = logger.child({ service: "CBT_CONTROLLER" });
 const cbtService = new CBTService();
 
-
-export const getStudentExams = async (req, res) => {
+// STUDENT: Fetch available exams
+export const getStudentExams = async (req, res, next) => {
   try {
     const exams = await cbtService.getAvailableExams(req.userId);
     return res.status(200).json(
@@ -15,12 +15,12 @@ export const getStudentExams = async (req, res) => {
     );
   } catch (error) {
     cbtLogger.error(`Fetch Exams Error: ${error.message}`);
-    return res.status(400).json(errorResponse(400, error.message));
+    next(error);
   }
 };
 
-
-export const startExamAttempt = async (req, res) => {
+// STUDENT: Start an exam attempt
+export const startExamAttempt = async (req, res, next) => {
   try {
     const { examId } = req.params;
     const userAgent = req.headers['user-agent'];
@@ -37,14 +37,14 @@ export const startExamAttempt = async (req, res) => {
     if (error.message === "NOT_CLEARED_FOR_EXAMS") statusCode = 402; 
     if (error.message === "ALREADY_SUBMITTED") statusCode = 409;    
     if (error.message === "EXAM_NOT_YET_OPEN") statusCode = 423;    
-    if (error.message === "EXAM_ALREADY_CLOSED") statusCode = 410; // Gone (Time over)
+    if (error.message === "EXAM_ALREADY_CLOSED") statusCode = 410; 
 
     return res.status(statusCode).json(errorResponse(statusCode, error.message));
   }
 };
 
-
-export const submitExam = async (req, res) => {
+// STUDENT: Submit exam answers
+export const submitExam = async (req, res, next) => {
   try {
     const { examId, answers } = req.body; 
 
@@ -68,8 +68,8 @@ export const submitExam = async (req, res) => {
   }
 };
 
-
-export const addQuestionToBank = async (req, res) => {
+// TEACHER/ADMIN: Add question to the bank
+export const addQuestionToBank = async (req, res, next) => {
   try {
     const question = await Question.create({
         ...req.body,
@@ -78,17 +78,17 @@ export const addQuestionToBank = async (req, res) => {
     return res.status(201).json(successResponse(201, "Question saved to bank", question));
   } catch (error) {
     cbtLogger.error(`Bank Addition Error: ${error.message}`);
-    return res.status(400).json(errorResponse(400, "Failed to save question. Check your data structure."));
+    next(error);
   }
 };
 
-
-export const createExamPaper = async (req, res) => {
+// TEACHER/ADMIN: Create a new exam paper
+export const createExamPaper = async (req, res, next) => {
   try {
     const exam = await cbtService.createExamPaper(req.body, req.userId);
     return res.status(201).json(successResponse(201, "Exam paper created and linked", exam));
   } catch (error) {
     cbtLogger.error(`Exam Creation Error: ${error.message}`);
-    return res.status(400).json(errorResponse(400, error.message));
+    next(error);
   }
 };

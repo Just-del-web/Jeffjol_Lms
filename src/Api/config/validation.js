@@ -38,6 +38,7 @@ const signupSchema = Joi.object({
   lastName: Joi.string().required().trim(),
   email: Joi.string().required().email().lowercase().trim(),
   password: passwordComplexity,
+  gender: Joi.string().valid('Male', 'Female').required(),
   role: Joi.string().valid('student', 'teacher', 'parent', 'admin').optional(),
   currentClass: Joi.string().optional(),
   classArm: Joi.string().optional(),

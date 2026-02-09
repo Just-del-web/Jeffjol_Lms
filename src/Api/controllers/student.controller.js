@@ -3,15 +3,20 @@ import { successResponse, errorResponse } from "../utils/helper.js";
 
 const dashboardService = new StudentDashboardService();
 
-export const getOverview = async (req, res) => {
+export const getOverview = async (req, res, next) => {
   try {
     const { term, session } = req.query;
+    // req.userId and req.role come from the authenticate middleware
     const { userId, role } = req;
 
     let targetId = userId;
+    
+    // Parent logic: Parents view a specific student's data
     if (role === 'parent') {
       targetId = req.query.studentId; 
-      if (!targetId) return res.status(400).json(errorResponse(400, "Student ID is required for parent view."));
+      if (!targetId) {
+        return res.status(400).json(errorResponse(400, "Student ID is required for parent view."));
+      }
     }
 
     const currentTerm = term || "First"; 
@@ -23,6 +28,8 @@ export const getOverview = async (req, res) => {
       successResponse(200, "Dashboard data loaded.", dashboard)
     );
   } catch (error) {
-    return res.status(400).json(errorResponse(400, error.message));
+    // Instead of just returning, we pass it to next(error) 
+    // so the global error handler we built can log it properly.
+    next(error);
   }
 };

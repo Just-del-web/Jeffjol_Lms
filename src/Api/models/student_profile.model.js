@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
 const studentProfileSchema = new mongoose.Schema({
- 
   user: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
@@ -81,9 +80,7 @@ studentProfileSchema.virtual('fullClassName').get(function() {
   return `${this.currentClass}${this.classArm}`;
 });
 
-
-studentProfileSchema.pre('save', async function (next) {
- 
+studentProfileSchema.pre('save', async function () {
   if (this.isNew) {
     const date = new Date();
     const year = date.getFullYear();
@@ -113,7 +110,6 @@ studentProfileSchema.pre('save', async function (next) {
       this.familyCode = `FAM-${randomString}`;
     }
   }
-  next();
 });
 
 export default mongoose.model('StudentProfile', studentProfileSchema);

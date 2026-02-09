@@ -5,11 +5,10 @@ import logger from "../logging/logger.js";
 const authControllerLogger = logger.child({ service: "AUTH_CONTROLLER" });
 const authService = new AuthService();
 
-
 const getClientIp = (req) => req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
 
-export const signup = async (req, res) => {
+export const signup = async (req, res, next) => {
   try {
     const ip = getClientIp(req);
     const userAgent = req.headers['user-agent'];
@@ -21,13 +20,17 @@ export const signup = async (req, res) => {
     );
   } catch (error) {
     authControllerLogger.error(`Signup Controller Error: ${error.message}`);
-    const statusCode = error.message === "USER_ALREADY_EXISTS" ? 409 : 400;
-    return res.status(statusCode).json(errorResponse(statusCode, error.message));
+    
+    if (error.message === "USER_ALREADY_EXISTS") {
+        return res.status(409).json(errorResponse(409, "This email is already registered."));
+    }
+    
+    next(error); 
   }
 };
 
 
-export const verifySignupOtp = async (req, res) => {
+export const verifySignupOtp = async (req, res, next) => {
   try {
     const { userId, otp } = req.body;
 
@@ -42,13 +45,17 @@ export const verifySignupOtp = async (req, res) => {
     );
   } catch (error) {
     authControllerLogger.error(`OTP Verification Error: ${error.message}`);
-    const statusCode = error.message === "INVALID_OR_EXPIRED_OTP" ? 401 : 400;
-    return res.status(statusCode).json(errorResponse(statusCode, error.message));
+    
+    if (error.message === "INVALID_OR_EXPIRED_OTP") {
+        return res.status(401).json(errorResponse(401, error.message));
+    }
+    
+    next(error);
   }
 };
 
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const ip = getClientIp(req);
@@ -65,13 +72,17 @@ export const login = async (req, res) => {
     );
   } catch (error) {
     authControllerLogger.warn(`Login failure for ${req.body.email}: ${error.message}`);
-    const statusCode = error.message === "INVALID_CREDENTIALS" ? 401 : 400;
-    return res.status(statusCode).json(errorResponse(statusCode, error.message));
+    
+    if (error.message === "INVALID_CREDENTIALS") {
+        return res.status(401).json(errorResponse(401, "Invalid email or password."));
+    }
+
+    next(error);
   }
 };
 
 
-export const refresh = async (req, res) => {
+export const refresh = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     
@@ -84,11 +95,12 @@ export const refresh = async (req, res) => {
     return res.status(200).json(successResponse(200, "Token refreshed.", result));
   } catch (error) {
     authControllerLogger.error(`Refresh Error: ${error.message}`);
-    return res.status(401).json(errorResponse(401, "Invalid refresh token."));
+    next(error);
   }
 };
 
-export const forgotPassword = async (req, res) => {
+
+export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -108,12 +120,12 @@ export const forgotPassword = async (req, res) => {
 };
 
 
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
   try {
     await authService.logout(req.userId);
     res.clearCookie('refreshToken');
     return res.status(200).json(successResponse(200, "Logged out successfully."));
   } catch (error) {
-    return res.status(500).json(errorResponse(500, "Logout failed."));
+    next(error);
   }
 };

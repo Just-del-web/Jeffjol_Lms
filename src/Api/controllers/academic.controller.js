@@ -6,71 +6,83 @@ const academicService = new AcademicService();
 const engagementService = new EngagementService();
 
 
-export const uploadMaterial = async (req, res) => {
+export const uploadMaterial = async (req, res, next) => {
   try {
+    // Pass the buffer to the service where Tesseract lives
     const material = await academicService.uploadAcademicMaterial(
       req.userId,
       req.body,
       req.file
     );
-    return res
-      .status(201)
-      .json(
-        successResponse(201, "Material uploaded and transcribed successfully.", material)
-      );
+
+    return res.status(201).json(
+      successResponse(201, "Material uploaded and OCR processing complete.", material)
+    );
   } catch (error) {
-    return res.status(400).json(errorResponse(400, error.message));
+    next(error);
   }
 };
 
-
-export const getMyLibrary = async (req, res) => {
+/**
+ * STUDENT: Get Library (Grid View)
+ */
+export const getMyLibrary = async (req, res, next) => {
   try {
-    const { currentClass } = req.user.profile;
+    // Note: req.user.profile is populated by your authenticate middleware
+    const currentClass = req.user.profile?.currentClass || "SS1";
+    
     const materials = await academicService.getStudentMaterials(
-      currentClass,
+      currentClass, 
       req.query.subject
     );
-    return res
-      .status(200)
-      .json(successResponse(200, "Library fetched.", materials));
+
+    return res.status(200).json(
+      successResponse(200, "Library fetched successfully.", materials)
+    );
   } catch (error) {
-    return res.status(400).json(errorResponse(400, error.message));
+    next(error);
   }
 };
 
-export const readNoteContent = async (req, res) => {
+/**
+ * STUDENT: Read Note Content (Note Reader)
+ */
+export const readNoteContent = async (req, res, next) => {
   try {
     const note = await academicService.getNoteForReading(req.params.id);
-    if (!note)
+    
+    if (!note) {
       return res.status(404).json(errorResponse(404, "Note not found."));
+    }
 
-    await engagementService.logStudentAction(
+    // Log the action for engagement analytics
+    engagementService.logStudentAction(
       req.userId,
       "read_note",
       note._id,
       note.subject
-    );
+    ).catch(err => console.error("Logging failed:", err.message));
 
-    return res
-      .status(200)
-      .json(successResponse(200, "Note text loaded successfully.", note));
+    return res.status(200).json(
+      successResponse(200, "Content loaded for reader.", note)
+    );
   } catch (error) {
-    return res.status(400).json(errorResponse(400, error.message));
+    next(error);
   }
 };
 
-export const updateMaterial = async (req, res) => {
+
+export const updateMaterial = async (req, res, next) => {
   try {
     const updated = await academicService.updateMaterialContent(
       req.params.id,
       req.userId,
       req.body
     );
-    return res
-      .status(200)
-      .json(successResponse(200, "Content updated successfully.", updated));
+    return res.status(200).json(
+      successResponse(200, "Note content updated successfully.", updated)
+    );
   } catch (error) {
-    return res.status(400).json(errorResponse(400, error.message));
+    next(error);
   }
 };
