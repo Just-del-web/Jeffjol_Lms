@@ -10,13 +10,13 @@ import {
 
 const router = Router();
 
-router.post("/signup", authLimiter, validateSignup, AuthController.signup);
-router.post("/verify-email", authLimiter, validateOtpVerify, AuthController.verifySignupOtp);
+router.post("/signup",  validateSignup, AuthController.signup);
+router.post("/verify-email", validateOtpVerify, AuthController.verifySignupOtp);
 
-router.post("/login", authLimiter, validateLogin, AuthController.login);
+router.post("/login", validateLogin, AuthController.login);
 router.post("/refresh-token", AuthController.refresh); 
 
-router.post("/forgot-password", authLimiter, AuthController.forgotPassword);
+router.post("/forgot-password",  AuthController.forgotPassword);
 
 
 export default router;

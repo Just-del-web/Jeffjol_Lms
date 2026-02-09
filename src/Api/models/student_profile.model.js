@@ -15,9 +15,11 @@ const studentProfileSchema = new mongoose.Schema({
   admissionNumber: { 
     type: String, 
     unique: true,
+    sparse: true,
     trim: true,
     uppercase: true 
   },
+
   familyCode: { 
     type: String, 
     index: true 

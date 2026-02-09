@@ -90,6 +90,22 @@ export class AuthService {
     });
   }
 
+  async verifySignupOtp(userId, otp) {
+
+    await helper.validateToken(userId, otp, "signup-verification");
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isVerified: true },
+      { new: true }
+    );
+
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    authLogger.info(`User verified: ${userId}`);
+    return { verified: true };
+  }
+
   async login(email, password, ip, userAgent) {
     authLogger.info(`Login attempt for: ${email}`);
     
@@ -103,6 +119,7 @@ export class AuthService {
     }
 
     if (!user.isActive) throw new Error("ACCOUNT_DEACTIVATED");
+    const userRole = user.role.toLowerCase();
 
     const deviceDetails = helper.parseUserAgent(userAgent);
     const location = this._getLocation(ip);
@@ -126,7 +143,7 @@ export class AuthService {
     const token = jwt.sign(
       { 
         id: user._id, 
-        role: user.role, 
+        role: userRole, 
         tokenVersion: user.tokenVersion,
         name: `${user.firstName} ${user.lastName}` 
       },
@@ -139,7 +156,7 @@ export class AuthService {
       user: {
         id: user._id,
         name: `${user.firstName} ${user.lastName}`,
-        role: user.role,
+        role: userRole, 
         isVerified: user.isVerified,
         studentId: user.profile?.studentId || null,
       },

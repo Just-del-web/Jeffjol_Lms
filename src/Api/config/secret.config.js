@@ -41,12 +41,14 @@ const config = {
   JWT_REFRESH_SECRET: secretVault('jwt_refresh_secret', 'JWT_REFRESH_SECRET', null, true),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1h',
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12,
+  HMAC_SECRET: secretVault('hmac_secret', 'HMAC_SECRET', null, true),
+
 
   UPLOAD_DIR: path.resolve(process.env.UPLOAD_DIR || './uploads'),
   MAX_FILE_SIZE: 20 * 1024 * 1024,
 
   SEB_REQUIRED: process.env.SEB_REQUIRED !== 'false',
-  ADMIN_HASH_ROUTE: process.env.ADMIN_HASH_ROUTE || "miva_justice_portal",
+  ADMIN_HASH_ROUTE: process.env.ADMIN_HASH_ROUTE || "JEFF_JOL-admin$",
 
   PAYSTACK_SECRET: secretVault('paystack_secret', 'PAYSTACK_SECRET_KEY'),
 };

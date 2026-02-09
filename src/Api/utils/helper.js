@@ -9,7 +9,7 @@ const helperLogger = logger.child({ service: 'HELPER_UTILS' });
 
 const HMAC_SECRET = config.HMAC_SECRET;
 const tokenExpiry = +30 * 60 * 1000;
-const BCRYPTSALT = Number(config.BCRYPTSALTROUNDS) || 12;
+const BCRYPTSALT = Number(config.BCRYPT_SALT_ROUNDS) || 12;
 
 
 const mapIntent = (internalIntent) => {

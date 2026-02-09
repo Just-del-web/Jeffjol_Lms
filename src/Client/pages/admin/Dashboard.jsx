@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Users, DollarSign, GraduationCap, TrendingUp, 
-  AlertTriangle, UserCheck, ShieldCheck, Loader2 
+  UserCheck, ShieldCheck, Loader2 
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,15 @@ export default function AdminDashboard() {
         const res = await api.get("/admin/stats");
         setStats(res.data.data);
       } catch (err) {
-        toast.error("Failed to load school statistics.");
+        console.error("Dashboard data fetch failed:", err);
+        // We set empty stats object to prevent math crashes
+        setStats({
+            revenue: 0,
+            students: 0,
+            avgGrade: 0,
+            transactionCount: 0,
+            teachers: 0
+        });
       } finally {
         setLoading(false);
       }
@@ -41,25 +49,25 @@ export default function AdminDashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <AdminStatCard 
           title="Consolidated Revenue" 
-          value={`₦${(stats.revenue / 1000000).toFixed(1)}M`} 
+          value={`₦${((stats?.revenue || 0) / 1000000).toFixed(1)}M`} 
           sub="Verified Tuition & Levies" 
           icon={<DollarSign className="text-emerald-600" size={24}/>} 
         />
         <AdminStatCard 
           title="Active Students" 
-          value={stats.students.toLocaleString()} 
+          value={(stats?.students || 0).toLocaleString()} 
           sub="Across all departments" 
           icon={<Users className="text-indigo-600" size={24}/>} 
         />
         <AdminStatCard 
           title="Avg. School Grade" 
-          value={`${stats.avgGrade}%`} 
+          value={`${stats?.avgGrade || 0}%`} 
           sub="B+ Terminal Average" 
           icon={<GraduationCap className="text-blue-600" size={24}/>} 
         />
         <AdminStatCard 
           title="Admin Verification" 
-          value={stats.transactionCount} 
+          value={stats?.transactionCount || 0} 
           sub="Recent receipts cleared" 
           icon={<ShieldCheck className="text-indigo-600" size={24}/>} 
         />
@@ -75,14 +83,14 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-400">
                 <span>Tuition Fees Collected</span>
-                <span className="text-emerald-600">₦{(stats.revenue * 0.8).toLocaleString()} (82%)</span>
+                <span className="text-emerald-600">₦${((stats?.revenue || 0) * 0.8).toLocaleString()} (82%)</span>
               </div>
               <Progress value={82} className="h-4 bg-slate-100 rounded-full" />
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-400">
                 <span>Digital Services Levy</span>
-                <span className="text-indigo-600">₦{(stats.revenue * 0.2).toLocaleString()} (94%)</span>
+                <span className="text-indigo-600">₦${((stats?.revenue || 0) * 0.2).toLocaleString()} (94%)</span>
               </div>
               <Progress value={94} className="h-4 bg-slate-100 rounded-full" />
             </div>
@@ -114,7 +122,7 @@ export default function AdminDashboard() {
              </CardHeader>
              <CardContent className="flex items-center justify-between pb-6">
                 <div className="flex items-center gap-3 font-black text-3xl text-slate-900 italic tracking-tighter">
-                   <UserCheck className="text-emerald-500" size={28}/> {stats.teachers - 2}/{stats.teachers}
+                    <UserCheck className="text-emerald-500" size={28}/> {(stats?.teachers || 0) - 2}/{(stats?.teachers || 0)}
                 </div>
                 <Badge variant="outline" className="border-slate-200 font-bold">Teachers Active</Badge>
              </CardContent>

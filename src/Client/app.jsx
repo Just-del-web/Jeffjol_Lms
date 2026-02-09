@@ -14,6 +14,7 @@ import Noticeboard from "./pages/admin/Noticeboard";
 import ParentDashboard from "./pages/parents/Dashboard";
 import ChildResults from "./pages/parents/ChildResults";
 import FamilyBursary from "./pages/parents/FamilyBusary";
+import FamilyLinker from "./pages/admin/FamilyLinker";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentExams from "./pages/student/Exam";
 import SubjectLibrary from "./pages/student/Library";
@@ -26,27 +27,39 @@ import GradeEntry from "./pages/teachers/GradeEntry";
 import QuestionBank from "./pages/teachers/QuestionBank";
 import ScheduleExam from "./pages/teachers/ScheduleExam";
 
-export default function App() {
-  const role = localStorage.getItem("role") || "admin"; 
+/**
+ * ROOT REDIRECT HELPER
+ * Decides where to send the user if they hit "/" or an unknown path
+ */
+function RootRedirect() {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+  
+  if (!token) return <Navigate to="/login" replace />;
+  return <Navigate to={`/${role}`} replace />;
+}
 
+export default function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-center" richColors />
       <Routes>
+        {/* PUBLIC ROUTES */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
 
-
-
-        {/* This is the magic part: DashboardLayout wraps everything */}
+        {/* PROTECTED WRAPPER: All logic for role-checking is now inside DashboardLayout */}
         <Route element={<DashboardLayout />}>
+          
           {/* ADMIN */}
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/approvals" element={<PaymentApprovals />} />
           <Route path="/admin/broadcast" element={<SchoolBroadcast />} />
           <Route path="/admin/noticeboard" element={<Noticeboard />} />
+          <Route path="/admin/family-linker" element={<FamilyLinker />} />
+
 
           {/* PARENT */}
           <Route path="/parent" element={<ParentDashboard />} />
@@ -70,8 +83,9 @@ export default function App() {
           <Route path="/teacher/schedule" element={<ScheduleExam />} />
         </Route>
 
-        {/* Fallback */}
-        <Route path="/" element={<Navigate to={`/${role}`} />} />
+        {/* FALLBACKS */}
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>
   );
