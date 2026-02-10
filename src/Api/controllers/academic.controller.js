@@ -1,5 +1,5 @@
-import { AcademicService } from "../services/academic.service.js";
-import { EngagementService } from "../services/engagement.service.js"; 
+import { AcademicService } from "../service/academic.service.js";
+import { EngagementService } from "../service/engagement.service.js"; 
 import { successResponse, errorResponse } from "../utils/helper.js";
 
 const academicService = new AcademicService();

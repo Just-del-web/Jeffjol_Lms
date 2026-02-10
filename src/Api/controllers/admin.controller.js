@@ -1,6 +1,7 @@
-import * as adminService from "../services/admin.service.js";
+import * as adminService from "../service/admin.service.js";
 import { User } from "../models/user.model.js";
 import { successResponse, errorResponse } from "../utils/helper.js";
+import { Announcement } from "../models/announcement.model.js";
 
 export const getStats = async (req, res, next) => {
   try {

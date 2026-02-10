@@ -1,4 +1,4 @@
-import { RelationshipService } from "../services/relationship.service.js";
+import { RelationshipService } from "../service/relationship.service.js";
 import { successResponse, errorResponse } from "../utils/helper.js";
 
 const relService = new RelationshipService();

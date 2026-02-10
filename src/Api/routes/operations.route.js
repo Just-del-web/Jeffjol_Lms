@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as OpsController from "../controller/operations.controller.js";
+import * as OpsController from "../controllers/operations.controller.js";
 import { authenticate, restrictTo } from "../middleware/auth.middleware.js";
 
 const router = Router();

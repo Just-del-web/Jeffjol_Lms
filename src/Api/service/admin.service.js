@@ -1,7 +1,7 @@
 import { User } from "../models/user.model.js";
-import { Course } from "../models/courses.model.js";
+import { Content } from "../models/content.model.js";
 import { Payment } from "../models/payment.model.js";
-import { mailService } from "../services/mail.service.js";
+import { MailService } from "../service/mail.service.js";
 import { Announcement } from "../models/announcement.model.js";
 
 export const getAdminStats = async () => {
@@ -42,5 +42,5 @@ export const broadcastEmail = async (broadcastData) => {
 };
 
 export const createCourse = async (courseData) => {
-  return await Course.create(courseData);
+  return await Content.create(contentData);
 };

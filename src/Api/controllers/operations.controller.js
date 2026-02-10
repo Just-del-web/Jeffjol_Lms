@@ -1,4 +1,4 @@
-import { OperationsService } from "../services/operations.service.js";
+import { OperationsService } from "../service/operations.service.js";
 import { successResponse, errorResponse } from "../utils/helper.js";
 
 const opsService = new OperationsService();

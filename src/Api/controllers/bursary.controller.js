@@ -1,4 +1,4 @@
-import { BursaryService } from "../services/bursary.service.js";
+import { BursaryService } from "../service/bursary.service.js";
 import { successResponse, errorResponse } from "../utils/helper.js";
 import logger from "../logging/logger.js";
 

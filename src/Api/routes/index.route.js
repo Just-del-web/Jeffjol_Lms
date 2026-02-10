@@ -7,6 +7,11 @@ import examRoutes from "../routes/exam.route.js";
 import studentRoutes from "../routes/student.route.js";
 import parentRoutes from "../routes/parent.route.js";
 import announcementRoutes from "../routes/announcement.route.js";
+import adminRoutes from "../routes/admin.route.js";
+import bursaryRoutes from "../routes/bursary.route.js";
+import operationsRoutes from "../routes/operations.route.js";
+import academicRoutes from "../routes/academic.route.js";
+
 
 
 
@@ -21,7 +26,10 @@ router.use("/result", resultRoutes);
 router.use("/exam", examRoutes);
 router.use("/student", studentRoutes);
 router.use("/parent", parentRoutes);
-router.use("/announcement", announcementRoutes);
-
+router.use("/announcements", announcementRoutes);
+router.use("/admin", adminRoutes);
+router.use("/bursary", bursaryRoutes);
+router.use("/operations", operationsRoutes);
+router.use("/academic", academicRoutes);
 
 export default router;

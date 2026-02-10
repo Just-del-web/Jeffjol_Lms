@@ -19,7 +19,7 @@ import StudentDashboard from "./pages/student/Dashboard";
 import StudentExams from "./pages/student/Exam";
 import SubjectLibrary from "./pages/student/Library";
 import NoteReader from "./pages/student/NoteReader";
-import StudentPayment from "./pages/student/Payment";
+import StudentPayments from "./pages/student/Payment";
 import StudentResults from "./pages/student/Results";
 import ClassAnalytics from "./pages/teachers/Analytics";
 import ContentManager from "./pages/teachers/ContentManager";
@@ -70,7 +70,7 @@ export default function App() {
           <Route path="/student" element={<StudentDashboard />} />
           <Route path="/student/library" element={<SubjectLibrary />} />
           <Route path="/student/results" element={<StudentResults />} />
-          <Route path="/student/payments" element={<StudentPayment />} />
+          <Route path="/student/payments" element={<StudentPayments />} />
           <Route path="/student/exams" element={<StudentExams />} />
           <Route path="/student/notes" element={<NoteReader />} />
           <Route path="/student/analytics" element={<ClassAnalytics />} />

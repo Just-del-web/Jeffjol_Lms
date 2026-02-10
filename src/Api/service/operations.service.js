@@ -1,5 +1,5 @@
 
-import StudentProfile from '../models/StudentProfile.js';
+import StudentProfile from '../models/student_profile.model.js';
 import { Gradebook } from '../models/gradeBook.model.js';
 
 export class OperationsService {
