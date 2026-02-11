@@ -11,7 +11,6 @@ export default function ClassAnalytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This feeds from the EngagementService on the backend
     const fetchAnalytics = async () => {
       const res = await axios.get("/api/v1/teacher/engagement-stats");
       setStats(res.data.data);

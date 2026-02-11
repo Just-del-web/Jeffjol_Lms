@@ -19,6 +19,13 @@ router.get(
   AcademicController.readNoteContent,
 );
 
+// Add this to your academic.route.js
+router.get(
+  "/teacher-history",
+  restrictTo("teacher", "admin"),
+  AcademicController.getTeacherMaterials, // We need to create this
+);
+
 
 router.post(
   "/upload",

@@ -71,6 +71,14 @@ export const readNoteContent = async (req, res, next) => {
   }
 };
 
+export const getTeacherMaterials = async (req, res, next) => {
+  try {
+    const materials = await academicService.getTeacherMaterials(req.userId);
+    return res.status(200).json(successResponse(200, "Your uploads fetched.", materials));
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const updateMaterial = async (req, res, next) => {
   try {

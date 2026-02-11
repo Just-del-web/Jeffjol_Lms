@@ -33,6 +33,13 @@ router.post("/questions",
   CBTController.addQuestionToBank
 );
 
+
+router.get("/questions/all", 
+  restrictTo('teacher', 'admin'), 
+  CBTController.getAllQuestions 
+);
+
+
 router.post("/create-paper", 
   restrictTo('teacher', 'admin'), 
   validateExamCreation, 

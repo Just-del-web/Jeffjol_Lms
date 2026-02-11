@@ -82,6 +82,24 @@ export const addQuestionToBank = async (req, res, next) => {
   }
 };
 
+export const getAllQuestions = async (req, res, next) => {
+  try {
+    const { subject, difficulty } = req.query;
+    const query = {};
+    
+    if (subject) query.subject = subject;
+    if (difficulty) query.difficulty = difficulty;
+
+    const questions = await Question.find(query).sort({ createdAt: -1 });
+    
+    return res.status(200).json(
+      successResponse(200, "Question bank fetched", questions)
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 // TEACHER/ADMIN: Create a new exam paper
 export const createExamPaper = async (req, res, next) => {
   try {

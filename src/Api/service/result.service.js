@@ -69,6 +69,48 @@ export class ResultService {
   }
 
   /**
+   * --- ACADEMIC HISTORY & ANALYTICS ---
+   * Fetches full history for student or parent view.
+   */
+  async getStudentAcademicHistory(studentId) {
+    return await Result.find({ student: studentId })
+      .populate('teacher', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  async getPerformanceAnalytics(studentId) {
+    const results = await Result.find({ student: studentId });
+    if (results.length === 0) return { average: 0, bestSubject: "N/A" };
+
+    const totalScore = results.reduce((sum, r) => sum + r.totalScore, 0);
+    const average = totalScore / results.length;
+    
+    const sorted = [...results].sort((a, b) => b.totalScore - a.totalScore);
+
+    return {
+      average: Math.round(average * 10) / 10,
+      totalSubjects: results.length,
+      bestSubject: sorted[0].subject,
+      gpaEquivalent: (average / 20).toFixed(2) // 5.0 Scale
+    };
+  }
+
+  /**
+   * --- PARENTAL ACCESS ---
+   */
+  async getStudentResultForParent(parentId, childId, term, session) {
+    const student = await StudentProfile.findOne({ user: childId, parent: parentId });
+    if (!student) throw new Error("UNAUTHORIZED_ACCESS_TO_CHILD_DATA");
+
+    const query = { student: childId };
+    if (term) query.term = term;
+    if (session) query.session = session;
+
+    return await Result.find(query).sort({ createdAt: -1 });
+  }
+
+  /**
    * --- ADMIN: COMPILER & RANKING ENGINE ---
    * Groups results by student, calculates averages, and saves positions.
    */
@@ -79,7 +121,6 @@ export class ResultService {
 
     if (results.length === 0) throw new Error("No results found for this criteria.");
 
-    // 1. Group by student
     const broadsheetMap = results.reduce((acc, curr) => {
       const studentId = curr.student._id.toString();
       if (!acc[studentId]) {
@@ -97,7 +138,6 @@ export class ResultService {
       return acc;
     }, {});
 
-    // 2. Sort by Average
     const broadsheetArray = Object.values(broadsheetMap)
       .map(s => ({
         ...s,
@@ -105,7 +145,6 @@ export class ResultService {
       }))
       .sort((a, b) => b.average - a.average);
 
-    // 3. Write Positions to DB
     const updateOps = broadsheetArray.map((s, index) => {
       const pos = index + 1;
       const getSuffix = (n) => {
