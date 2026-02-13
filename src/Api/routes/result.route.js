@@ -13,6 +13,12 @@ router.get(
 );
 
 router.get(
+  "/class-list/:className",
+  restrictTo("teacher", "admin"),
+  ResultController.getStudentsByClass
+);
+
+router.get(
   "/download-report",
   restrictTo("student", "parent", "teacher", "admin"),
   ResultController.downloadReportCard,

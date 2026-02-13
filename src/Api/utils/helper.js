@@ -143,18 +143,31 @@ const executeWithTransaction = async (operation) => {
 };
 
 
-const findValidToken = async (hashedToken, intent, session = null) => {
+
+const validateToken = async (userId, otp, intent) => {
   const dbIntent = mapIntent(intent);
-  const queryData = {
+  const hashedToken = generateHashToken(otp); 
+  const storedToken = await tokenModel.findOne({
+    userId,
     token: hashedToken,
     intent: dbIntent,
     expiresAt: { $gt: new Date() },
-  };
+  });
 
-  return session
-    ? tokenModel.findOne(queryData).session(session)
-    : tokenModel.findOne(queryData);
+  if (!storedToken) {
+    throw new Error("INVALID_OR_EXPIRED_OTP");
+  }
+
+  const expectedSig = generateTokenSignature(userId.toString(), hashedToken);
+  if (storedToken.sig !== expectedSig) {
+    throw new Error("SECURITY_SIGNATURE_MISMATCH");
+  }
+
+  await tokenModel.deleteOne({ _id: storedToken._id });
+
+  return true;
 };
+
 
 const validateTokenSignature = (storedToken, hashedToken) => {
   const expectedSig = generateTokenSignature(storedToken.userId.toString(), hashedToken);
@@ -272,7 +285,7 @@ export {
   errorResponse,
   storeTokenRecord,
   executeWithTransaction,
-  findValidToken,
+  validateToken,
   validateTokenSignature,
   hashPassword,
   timeStringToMs,

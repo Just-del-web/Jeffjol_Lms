@@ -15,7 +15,7 @@ export class AuthService {
     return geo ? `${geo.city}, ${geo.country}` : "Unknown Location";
   }
 
-  async signup(data, ip, userAgent) {
+ async signup(data, ip, userAgent) {
     return await helper.executeWithTransaction(async (session) => {
       authLogger.info(`Signup attempt initiated: ${data.email}`);
       const normalizedEmail = data.email.toLowerCase();
@@ -26,6 +26,7 @@ export class AuthService {
       const deviceDetails = helper.parseUserAgent(userAgent);
       const location = this._getLocation(ip);
 
+      // 1. Create the User
       const [user] = await User.create(
         [
           {
@@ -50,6 +51,7 @@ export class AuthService {
         { session }
       );
 
+      // 2. Create Student Profile (Only for students)
       if (user.role === "student") {
         const [profile] = await StudentProfile.create(
           [
@@ -59,34 +61,27 @@ export class AuthService {
               gender: data.gender,
               classArm: data.classArm || "A",
               academicYear: "2024/2025",
-              schoolId: data.schoolId,
+              schoolId: data.schoolId || `JMS-${Date.now().toString().slice(-4)}`, // Fallback ID
               isClearedForExams: false, 
             },
           ],
           { session }
         );
 
+        // Link profile back to user
         user.profile = profile._id;
         await user.save({ session, validateBeforeSave: false });
-        authLogger.info(`Student Profile linked: ${profile.studentId}`);
       }
 
+      // 3. Generate OTP
       const { otp } = await helper.createVerificationToken(
         user._id,
         session,
         "signup-verification"
       );
 
-      // Log verification code to terminal for development
       console.log(`\n[SECURITY] Verification OTP for ${user.email}: ${otp}\n`);
-
-      authLogger.info(`Signup successful for User ID: ${user._id}`);
-
-      return {
-        userId: user._id,
-        email: user.email,
-        requiresVerification: true,
-        };
+      return { userId: user._id, email: user.email, requiresVerification: true };
     });
   }
 

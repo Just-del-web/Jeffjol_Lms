@@ -7,15 +7,10 @@ const resultLogger = logger.child({ service: "RESULT_SERVICE" });
 
 export class ResultService {
 
-  /**
-   * --- TEACHER: BULK CA/GRADE UPLOAD ---
-   * Validates student-class alignment before saving.
-   */
   async bulkUploadResults(teacherId, resultsArray, className) {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      // 1. Validate: Ensure students belong to the specified class
       const studentIds = resultsArray.map(item => item.studentId);
       const validStudents = await StudentProfile.find({
         user: { $in: studentIds },
@@ -26,10 +21,9 @@ export class ResultService {
       const invalidEntries = studentIds.filter(id => !validIds.includes(id));
 
       if (invalidEntries.length > 0) {
-        throw new Error(`Validation Failed: ${invalidEntries.length} students are not in ${className}.`);
+        throw new Error(`Validation Failed: ${invalidEntries.length} students are not registered in ${className}.`);
       }
 
-      // 2. Prepare Bulk Operations
       const ops = resultsArray.map(item => {
         const batchId = `${item.studentId}_${item.term}_${item.session}`;
         return {
@@ -57,7 +51,7 @@ export class ResultService {
       const result = await Result.bulkWrite(ops, { session });
       await session.commitTransaction();
       
-      resultLogger.info(`Bulk upload for ${className} successful. Modified: ${result.modifiedCount}`);
+      resultLogger.info(`Bulk upload for ${className} successful. Sync Count: ${resultsArray.length}`);
       return { success: true, count: resultsArray.length };
     } catch (error) {
       await session.abortTransaction();
@@ -68,10 +62,6 @@ export class ResultService {
     }
   }
 
-  /**
-   * --- ACADEMIC HISTORY & ANALYTICS ---
-   * Fetches full history for student or parent view.
-   */
   async getStudentAcademicHistory(studentId) {
     return await Result.find({ student: studentId })
       .populate('teacher', 'firstName lastName')
@@ -81,7 +71,7 @@ export class ResultService {
 
   async getPerformanceAnalytics(studentId) {
     const results = await Result.find({ student: studentId });
-    if (results.length === 0) return { average: 0, bestSubject: "N/A" };
+    if (results.length === 0) return { average: 0, totalSubjects: 0, bestSubject: "N/A" };
 
     const totalScore = results.reduce((sum, r) => sum + r.totalScore, 0);
     const average = totalScore / results.length;
@@ -92,34 +82,34 @@ export class ResultService {
       average: Math.round(average * 10) / 10,
       totalSubjects: results.length,
       bestSubject: sorted[0].subject,
-      gpaEquivalent: (average / 20).toFixed(2) // 5.0 Scale
+      gpaEquivalent: (average / 20).toFixed(2) 
     };
   }
 
-  /**
-   * --- PARENTAL ACCESS ---
-   */
   async getStudentResultForParent(parentId, childId, term, session) {
-    const student = await StudentProfile.findOne({ user: childId, parent: parentId });
-    if (!student) throw new Error("UNAUTHORIZED_ACCESS_TO_CHILD_DATA");
+ 
+  const studentUser = await mongoose.model('User').findOne({ 
+    _id: childId, 
+    parent: parentId 
+  });
 
-    const query = { student: childId };
-    if (term) query.term = term;
-    if (session) query.session = session;
-
-    return await Result.find(query).sort({ createdAt: -1 });
+  if (!studentUser) {
+    throw new Error("UNAUTHORIZED_ACCESS_TO_CHILD_DATA");
   }
 
-  /**
-   * --- ADMIN: COMPILER & RANKING ENGINE ---
-   * Groups results by student, calculates averages, and saves positions.
-   */
+  const query = { student: childId };
+  if (term) query.term = term;
+  if (session) query.session = session;
+
+  return await Result.find(query).sort({ createdAt: -1 });
+}
+  
   async generateClassBroadsheet(className, term, session) {
     const results = await Result.find({ classAtTime: className, term, session })
       .populate('student', 'firstName lastName')
       .lean();
 
-    if (results.length === 0) throw new Error("No results found for this criteria.");
+    if (results.length === 0) throw new Error("No academic records found for this class/term.");
 
     const broadsheetMap = results.reduce((acc, curr) => {
       const studentId = curr.student._id.toString();
