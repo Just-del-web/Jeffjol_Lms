@@ -11,18 +11,18 @@ const resultService = new ResultService();
 export const getMyResults = async (req, res, next) => {
   try {
     const { role, userId } = req;
-    const { term, session, childId } = req.query;
+    const { term, session, childId } = req.query; 
     let targetId = userId;
 
     if (role === "parent") {
       if (!childId) return res.status(400).json(errorResponse(400, "Child selection is required."));
       
       const history = await resultService.getStudentResultForParent(userId, childId, term, session);
-      return res.status(200).json(successResponse(200, "Child's academic history fetched", history));
+      return res.status(200).json(successResponse(200, "Child's history fetched", history));
     }
 
-    const history = await resultService.getStudentAcademicHistory(targetId);
-    const analytics = await resultService.getPerformanceAnalytics(targetId);
+    const history = await resultService.getStudentAcademicHistory(targetId, term, session);
+    const analytics = await resultService.getPerformanceAnalytics(targetId, term, session);
 
     return res.status(200).json(successResponse(200, "Academic history synchronized.", { history, analytics }));
   } catch (error) {
@@ -73,28 +73,20 @@ export const downloadReportCard = async (req, res, next) => {
   try {
     const { term, session, studentId } = req.query;
     const { role, userId } = req;
-    
     const targetId = role === "parent" ? req.query.childId : studentId || userId;
-
     const student = await User.findById(targetId).populate('profile');
     if (!student) return res.status(404).json(errorResponse(404, "Student record not found."));
-
-    const history = await resultService.getStudentAcademicHistory(targetId);
-    
-    const termResults = history.filter(r => r.term === term && r.session === session);
+    const termResults = await resultService.getStudentAcademicHistory(targetId, term, session);
 
     if (termResults.length === 0) {
-      return res.status(404).json(errorResponse(404, "No verified results found for this period."));
+      return res.status(404).json(errorResponse(404, "No verified results found for the selected period."));
     }
-
-    const analytics = await resultService.getPerformanceAnalytics(targetId);
-
+    const analytics = await resultService.getPerformanceAnalytics(targetId, term, session);
     const pdfBuffer = await pdfService.generateReportCard(
       student,
       termResults,
       analytics
     );
-
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename=${student.lastName}_Report_Card.pdf`,

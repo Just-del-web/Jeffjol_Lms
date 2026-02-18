@@ -8,18 +8,20 @@ const studentProfileSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    parents: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+    parents: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
     studentId: {
       type: String,
       unique: true,
-      sparse: true,
+      sparse: true, 
       default: () => `STU-${Math.floor(1000 + Math.random() * 9000)}`,
+    },
+
+    admissionNumber: {
+      type: String,
+      unique: true,
+      sparse: true, 
+      index: true
     },
 
     familyCode: {
@@ -30,7 +32,11 @@ const studentProfileSchema = new mongoose.Schema(
     currentClass: {
       type: String,
       required: true,
-      enum: ["JSS1", "JSS2", "JSS3", "SS1", "SS2", "SS3"],
+      enum: [
+        "Playgroup", "Pre-Nursery", "Nursery 1", "Nursery 2", "Reception",
+        "Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5", "Primary 6",
+        "JSS1", "JSS2", "JSS3", "SS1", "SS2", "SS3"
+      ],
     },
     classArm: {
       type: String,
@@ -46,14 +52,8 @@ const studentProfileSchema = new mongoose.Schema(
     },
     isClearedForExams: {
       type: Boolean,
-      default: false,
+      default: true, 
     },
-    house: {
-      type: String,
-      enum: ["Red", "Blue", "Yellow", "Green"],
-      required: false,
-    },
-
     gender: {
       type: String,
       enum: ["Male", "Female"],
@@ -78,7 +78,7 @@ const studentProfileSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  },
+  }
 );
 
 studentProfileSchema.virtual("fullClassName").get(function () {
@@ -89,38 +89,32 @@ studentProfileSchema.pre("save", async function () {
   if (this.isNew) {
     const date = new Date();
     const year = date.getFullYear();
-    const prefix = "JHS";
+    const prefix = "JMS"; 
 
     if (!this.admissionNumber) {
-      const lastStudent = await mongoose
-        .model("StudentProfile")
-        .findOne({
-          admissionNumber: new RegExp(`^${prefix}/${year}/`),
-        })
-        .sort({ createdAt: -1 });
+      try {
+        const lastStudent = await mongoose.model("StudentProfile")
+          .findOne({ admissionNumber: new RegExp(`^${prefix}/${year}/`) })
+          .sort({ createdAt: -1 });
 
-      let nextSequence = 1;
-
-      if (lastStudent && lastStudent.admissionNumber) {
-        const parts = lastStudent.admissionNumber.split("/");
-        const lastNumber = parseInt(parts[2], 10);
-        if (!isNaN(lastNumber)) {
-          nextSequence = lastNumber + 1;
+        let nextSequence = 1;
+        if (lastStudent && lastStudent.admissionNumber) {
+          const parts = lastStudent.admissionNumber.split("/");
+          const lastNumber = parseInt(parts[2], 10);
+          if (!isNaN(lastNumber)) nextSequence = lastNumber + 1;
         }
-      }
 
-      const paddedSequence = String(nextSequence).padStart(3, "0");
-      this.admissionNumber = `${prefix}/${year}/${paddedSequence}`;
+        const paddedSequence = String(nextSequence).padStart(3, "0");
+        this.admissionNumber = `${prefix}/${year}/${paddedSequence}`;
+      } catch (err) {
+        return next(err);
+      }
     }
 
     if (!this.familyCode) {
-      const randomString = Math.random()
-        .toString(36)
-        .substring(2, 7)
-        .toUpperCase();
-      this.familyCode = `FAM-${randomString}`;
+      this.familyCode = `FAM-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     }
   }
 });
 
-export default mongoose.model("StudentProfile", studentProfileSchema);
+export default mongoose.models.StudentProfile || mongoose.model("StudentProfile", studentProfileSchema);

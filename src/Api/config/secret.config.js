@@ -47,6 +47,9 @@ const config = {
   UPLOAD_DIR: path.resolve(process.env.UPLOAD_DIR || './uploads'),
   MAX_FILE_SIZE: 20 * 1024 * 1024,
 
+  CLOUDINARY_KEY: secretVault('cloudinary_key', 'CLOUDINARY_KEY', null, true),
+  CLOUDINARY_SECRET: secretVault('cloudinary_secret', 'CLOUDINARY_SECRET', null, true),
+  CLOUDINARY_NAME: secretVault('cloudinary_name', 'CLOUDINARY_NAME', null, true),
   SEB_REQUIRED: process.env.SEB_REQUIRED !== 'false',
   ADMIN_HASH_ROUTE: process.env.ADMIN_HASH_ROUTE || "JEFF_JOL-admin$",
 

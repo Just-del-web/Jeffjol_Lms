@@ -1,4 +1,5 @@
 import { PaymentService } from "../service/payment.service.js";
+import StudentProfile from "../models/student_profile.model.js"; 
 import { successResponse, errorResponse } from "../utils/helper.js";
 import logger from "../logging/logger.js";
 
@@ -7,29 +8,35 @@ const paymentService = new PaymentService();
 
 export const submitProof = async (req, res, next) => {
   try {
-    const uploaderId = req.userId;
-    const { role } = req;
-    
-    const studentId = (role === 'student') ? uploaderId : req.body.studentId;
-
-    if (!studentId) {
-      return res.status(400).json(errorResponse(400, "Which student is this payment for?"));
-    }
-
     if (!req.file) {
-      return res.status(400).json(errorResponse(400, "Please upload a clear image of your receipt."));
+      return res.status(400).json(errorResponse(400, "Please upload a receipt image."));
     }
 
-    const payment = await paymentService.submitPaymentProof(uploaderId, studentId, req.body, req.file);
+    const uploaderId = req.userId; 
+    
+    const profile = await StudentProfile.findOne({ user: uploaderId });
 
+    if (!profile) {
+      paymentControllerLogger.error(`Bypass Error: User ${uploaderId} has no Student Profile.`);
+      return res.status(404).json(errorResponse(404, "Student profile not found. Please complete registration."));
+    }
+
+    const payment = await paymentService.submitPaymentProof(
+        uploaderId, 
+        req.body, 
+        req.file
+    );
+
+    paymentControllerLogger.info(`Receipt accepted for Student: ${profile.studentId}`);
+    
     return res.status(201).json(
-      successResponse(201, "Receipt received. Your portal will unlock once the Bursar verifies it.", payment)
+      successResponse(201, "Receipt received! Verification pending.", payment)
     );
   } catch (error) {
+    paymentControllerLogger.error(`SubmitProof Failure: ${error.message}`);
     next(error); 
   }
 };
-
 
 export const verifyPayment = async (req, res, next) => {
   try {
@@ -40,6 +47,8 @@ export const verifyPayment = async (req, res, next) => {
     const result = await paymentService.verifyPayment(paymentId, bursarId, status, rejectionReason);
 
     const message = status === 'verified' ? "Payment verified and student cleared." : "Payment rejected.";
+    paymentControllerLogger.info(`Action: ${status} | Payment: ${paymentId}`);
+    
     return res.status(200).json(successResponse(200, message, result));
   } catch (error) {
     paymentControllerLogger.error(`Verification Error: ${error.message}`);
@@ -47,12 +56,12 @@ export const verifyPayment = async (req, res, next) => {
   }
 };
 
-
 export const getPendingPayments = async (req, res, next) => {
   try {
     const payments = await paymentService.getPendingPayments();
-    return res.status(200).json(successResponse(200, "Pending payments fetched", payments));
+    return res.status(200).json(successResponse(200, "Pending queue synchronized.", payments));
   } catch (error) {
+    paymentControllerLogger.error(`Fetch Error: ${error.message}`);
     next(error);
   }
 };

@@ -1,133 +1,150 @@
 import PDFDocument from 'pdfkit';
-
+import axios from 'axios';
 
 export class PDFService {
   async generateReportCard(student, results, analytics) {
-    return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    return new Promise(async (resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
       let buffers = [];
 
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      // --- 1. HEADER & LOGO ---
-      // doc.image('path/to/logo.png', 50, 45, { width: 50 });
-      doc.fillColor('#444444')
-         .fontSize(20)
-         .text('JEFFJOL HIGH SCHOOL', 110, 57)
-         .fontSize(10)
-         .text('Official Terminal Report Card', 110, 80)
-         .moveDown();
+      const isNursery = results[0]?.classAtTime?.toLowerCase().includes('nursery') || 
+                        results[0]?.classAtTime?.toLowerCase().includes('reception');
 
-      // --- 2. STUDENT INFO ---
-      doc.rect(50, 110, 500, 70).stroke(); // Box for info
-      doc.fontSize(12).fillColor('#000')
-         .text(`Student: ${student.firstName} ${student.lastName}`, 60, 120)
-         .text(`Class: ${results[0]?.classAtTime || 'N/A'}`, 60, 140)
-         .text(`Term: ${results[0]?.term} Term`, 350, 120)
-         .text(`Session: ${results[0]?.session}`, 350, 140);
+      doc.fillColor('#000')
+         .font('Helvetica-Bold')
+         .fontSize(22)
+         .text('JEFFJOL MONTESSORI SCHOOL', { align: 'center' });
+      
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text('#26 Big Daddy Avenue, Rumuapu Rukpokwu,', { align: 'center' })
+         .text('Port Harcourt, Rivers State.', { align: 'center' })
+         .text('Tel: 08038701194', { align: 'center' });
 
-      // --- 3. THE TABLE HEADER ---
-      const tableTop = 200;
-      doc.font('Helvetica-Bold');
-      this._generateTableRow(doc, tableTop, 'Subject', 'CA (40)', 'Exam (60)', 'Total', 'Grade');
-      this._generateHr(doc, tableTop + 20);
+      doc.moveDown(0.5);
+      doc.fontSize(14)
+         .font('Helvetica-Bold')
+         .text(`(${isNursery ? 'NURSERY' : 'PRIMARY'} SECTION)`, { align: 'center' });
 
-      // --- 4. THE TABLE ROWS ---
-      let i = 0;
-      doc.font('Helvetica');
+      try {
+        if (student.profilePicture) {
+          const response = await axios.get(student.profilePicture, { responseType: 'arraybuffer' });
+          doc.image(response.data, 460, 45, { width: 80, height: 80 });
+          doc.rect(460, 45, 80, 80).stroke(); 
+        } else {
+          doc.rect(460, 45, 80, 80).stroke();
+          doc.fontSize(8).text('PHOTO', 485, 80);
+        }
+      } catch (e) {
+        doc.rect(460, 45, 80, 80).stroke();
+      }
+
+      doc.moveDown(1);
+      const infoTop = doc.y;
+      doc.fontSize(10).font('Helvetica-Bold');
+      doc.text(`TERM: ${results[0]?.term}`, 40, infoTop);
+      doc.text(`SESSION: ${results[0]?.session}`, 160, infoTop);
+      doc.text(`CLASS: ${results[0]?.classAtTime}`, 320, infoTop);
+      
+      doc.moveDown(0.5);
+      doc.text(`NAME OF PUPIL: ${student.firstName.toUpperCase()} ${student.lastName.toUpperCase()}`, 40, doc.y);
+      doc.moveTo(130, doc.y).lineTo(550, doc.y).stroke(); 
+
+      doc.moveDown(1.5);
+      doc.text('PERFORMANCE IN SUBJECT', { underline: true });
+      doc.moveDown(0.5);
+
+      const tableTop = doc.y;
+      const col1 = 40, col2 = 220, col3 = 290, col4 = 360, col5 = 430, col6 = 500;
+
+      doc.rect(col1, tableTop, 515, 20).fill('#f2f2f2').stroke('#000');
+      doc.fillColor('#000').fontSize(9);
+      
+      doc.text('A. COGNITIVE SUBJECTS', col1 + 5, tableTop + 5);
+      if (isNursery) {
+        doc.text('MAX', col3, tableTop + 5);
+        doc.text('OBT', col4, tableTop + 5);
+      } else {
+        doc.text('CA (40%)', col3, tableTop + 5);
+        doc.text('EXAM (60%)', col4, tableTop + 5);
+        doc.text('TOTAL', col5, tableTop + 5);
+      }
+      doc.text('REMARKS', col6, tableTop + 5);
+
+      let currentY = tableTop + 20;
+
       results.forEach((res) => {
-        const position = tableTop + 30 + (i * 25);
-        this._generateTableRow(
-          doc, 
-          position, 
-          res.subject, 
-          res.caScore, 
-          res.examScore, 
-          res.totalScore, 
-          res.grade
-        );
-        this._generateHr(doc, position + 20);
-        i++;
+        doc.rect(col1, currentY, 515, 20).stroke();
+        doc.font('Helvetica').text(res.subject, col1 + 5, currentY + 5);
+        
+        if (isNursery) {
+          doc.text('100', col3, currentY + 5);
+          doc.text(res.totalScore.toString(), col4, currentY + 5);
+        } else {
+          doc.text(res.caScore.toString(), col3, currentY + 5);
+          doc.text(res.examScore.toString(), col4, currentY + 5);
+          doc.font('Helvetica-Bold').text(res.totalScore.toString(), col5, currentY + 5);
+        }
+        
+        doc.font('Helvetica').fontSize(8).text(res.remarks || '', col6, currentY + 5);
+        currentY += 20;
       });
 
-      // --- 5. SUMMARY & REMARKS ---
-      const summaryTop = tableTop + 60 + (i * 25);
-      doc.font('Helvetica-Bold').text(`Average: ${analytics.average}%`, 50, summaryTop);
-      doc.text(`Remark: ${analytics.average >= 50 ? 'Promoted' : 'Pass'}`, 50, summaryTop + 20);
-      
-      doc.font('Helvetica-Oblique')
-         .fontSize(10)
-         .text("Teacher's Signature: ____________________", 350, summaryTop + 40);
+      if (doc.y > 600) doc.addPage(); 
+
+      doc.moveDown(1);
+      const gridTop = doc.y;
+      this._drawBehaviorGrid(doc, gridTop, 'B. PSYCHOMOTOR', results[0]?.behavioralData || {});
+      this._drawBehaviorGrid(doc, gridTop, 'C. AFFECTIVE', results[0]?.behavioralData || {}, 280);
+
+      const footerTop = 720;
+      doc.fontSize(9).font('Helvetica-Bold')
+         .text('KEY TO GRADING', 40, footerTop);
+      doc.font('Helvetica').fontSize(8)
+         .text('90 - 100 = Distinction | 80 - 89 = Merit | 70 - 79 = Very Good | 60 - 69 = Good | 50 - 59 = Pass | Below 50 = Still learning', 40, footerTop + 15);
+
+      doc.moveDown(2);
+      doc.text('__________________________', 40, 780)
+         .text('Class Teacher\'s Signature', 40, 792);
+
+      doc.text('__________________________', 380, 780)
+         .text('Head Teacher\'s Signature', 380, 792);
 
       doc.end();
     });
   }
 
-
-  // Add to your PDFService class in services/pdf.service.js
-async generatePaymentReceipt(payment, student, balanceData) {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A5', margin: 30 }); 
-    let buffers = [];
-
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => resolve(Buffer.concat(buffers)));
-
-    // --- Header ---
-    doc.fillColor('#1a5f7a').fontSize(16).text('JEFFJOL HIGH SCHOOL', { align: 'center' });
-    doc.fillColor('#444444').fontSize(8).text('Bursary Department - Official Receipt', { align: 'center' });
-    doc.moveDown();
-
-    // --- Receipt Metadata ---
-    doc.fontSize(9).fillColor('#000');
-    doc.text(`Receipt No: JHS-REC-${payment._id.toString().slice(-6).toUpperCase()}`, 30, 80);
-    doc.text(`Date: ${new Date(payment.verifiedAt).toLocaleDateString()}`, 30, 95);
+  _drawBehaviorGrid(doc, y, title, data, xOffset = 40) {
+    const width = 240;
+    doc.fontSize(9).font('Helvetica-Bold').text(title, xOffset, y);
     
-    doc.rect(30, 115, 360, 1).fill('#eeeeee'); 
-
-    // --- Content ---
-    doc.moveDown(2);
-    doc.fontSize(11).text(`Received from:`, 30, 130);
-    doc.font('Helvetica-Bold').text(`${student.firstName} ${student.lastName} (${student.admissionNumber})`, 30, 145);
+    const headers = ['EXCELLENT', 'GOOD', 'FAIR', 'POOR'];
+    let curY = y + 15;
     
-    doc.font('Helvetica').fontSize(11).text(`The sum of:`, 30, 170);
-    doc.font('Helvetica-Bold').fontSize(14).text(`N ${payment.amount.toLocaleString()}`, 30, 185);
+    
+    doc.rect(xOffset, curY, width, 15).stroke();
+    headers.forEach((h, i) => {
+      doc.fontSize(6).text(h, xOffset + 100 + (i * 35), curY + 5);
+    });
 
-    doc.font('Helvetica').fontSize(10).text(`Being payment for: ${payment.feeType} (${payment.term} Term)`, 30, 215);
-    doc.text(`Payment Method: ${payment.paymentMethod}`, 30, 230);
+    const traits = title.includes('PSYCHOMOTOR') 
+      ? ['Writing Skill', 'Reading Fluency', 'Musical Skill', 'Creative Skills']
+      : ['Punctuality', 'Attendance', 'Neatness', 'Politeness'];
 
-    // --- Balance Box ---
-    doc.rect(30, 260, 360, 40).fill('#f9f9f9').stroke('#dddddd');
-    doc.fillColor('#000').font('Helvetica-Bold')
-       .text(`Outstanding Balance: N ${balanceData.balance.toLocaleString()}`, 40, 275);
-
-    // --- Footer/Stamp ---
-    doc.fontSize(8).fillColor('#888888')
-       .text('This is a computer-generated receipt. No signature required.', 30, 320, { align: 'center' });
-
-    doc.end();
-  });
-}
-
-
-  // Helper: Draw a table row
-  _generateTableRow(doc, y, subject, ca, exam, total, grade) {
-    doc.fontSize(10)
-       .text(subject, 50, y)
-       .text(ca, 200, y)
-       .text(exam, 280, y)
-       .text(total, 360, y)
-       .text(grade, 450, y);
-  }
-
-  // Helper: Draw a horizontal line
-  _generateHr(doc, y) {
-    doc.strokeColor('#aaaaaa')
-       .lineWidth(1)
-       .moveTo(50, y)
-       .lineTo(550, y)
-       .stroke();
+    traits.forEach(trait => {
+      curY += 15;
+      doc.rect(xOffset, curY, width, 15).stroke();
+      doc.fontSize(8).font('Helvetica').text(trait, xOffset + 5, curY + 5);
+      
+      const rating = data[trait.toLowerCase().replace(' ', '')];
+      if (rating) {
+        const tickIdx = headers.indexOf(rating.toUpperCase());
+        if (tickIdx !== -1) doc.text('X', xOffset + 115 + (tickIdx * 35), curY + 5);
+      }
+    });
   }
 }

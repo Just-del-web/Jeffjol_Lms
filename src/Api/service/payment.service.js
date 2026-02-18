@@ -6,40 +6,38 @@ import { BursaryService } from './bursary.service.js';
 import { PDFService } from './pdf.service.js';        
 import { MailService } from './mail.service.js';
 
-
 const paymentLogger = logger.child({ service: "PAYMENT_SERVICE" });
 const bursaryService = new BursaryService();
 const pdfService = new PDFService();
 const mailService = new MailService();
 
 export class PaymentService {
- 
-  async submitPaymentProof(studentId, paymentData, file) {
+
+async submitPaymentProof(studentUserId, paymentData, file) {
     if (!file) throw new Error("PAYMENT_PROOF_REQUIRED");
+
+    const profile = await StudentProfile.findOne({ user: studentUserId });
+    if (!profile) throw new Error("STUDENT_PROFILE_NOT_FOUND");
 
     const uploadResult = await uploadToCloudinary(file.buffer, 'receipts');
 
     const payment = await Payment.create({
-      student: studentId,
-      uploadedBy: uploaderId,
-      amount: paymentData.amount,
+      student: studentUserId, 
+      amount: Number(paymentData.amount) || 0,
       feeType: paymentData.feeType || 'Tuition',
-      paymentMethod: paymentData.paymentMethod,
-      transactionReference: paymentData.transactionReference,
+      paymentMethod: paymentData.paymentMethod || 'Bank Transfer',
+      transactionReference: `TRX-${profile.studentId}-${Date.now()}`,
       proofOfPayment: uploadResult.secure_url,
-      cloudinaryId: uploadResult.public_id,
       term: paymentData.term,
       session: paymentData.session,
       status: 'pending'
     });
 
-    paymentLogger.info(`Payment proof uploaded by Student ${studentId} for ${paymentData.amount}`);
     return payment;
   }
 
  
   async verifyPayment(paymentId, bursarId, status, rejectionReason = null) {
-   
     const payment = await Payment.findById(paymentId).populate('student');
     if (!payment) throw new Error("PAYMENT_NOT_FOUND");
 
@@ -49,58 +47,48 @@ export class PaymentService {
       payment.verifiedAt = new Date();
       await payment.save();
 
-      const profile = await StudentProfile.findOne({ user: payment.student._id })
-        .populate('parents');
-
       const balanceData = await bursaryService.getStudentBalance(
         payment.student._id, 
         payment.term, 
         payment.session
       );
 
-      try {
-        const receiptBuffer = await pdfService.generatePaymentReceipt(payment, profile, balanceData);
-
-        if (profile.parents && profile.parents.length > 0) {
-          const parentEmails = profile.parents.map(p => p.email);
-          
-          await mailService.sendMail({
-            to: parentEmails,
-            subject: `Official Receipt: ${payment.feeType} - ${payment.term} Term`,
-            message: `Hello, please find attached the electronic receipt for the payment of N${payment.amount.toLocaleString()} for ${payment.student.firstName}.`,
-            attachments: [
-              {
-                filename: `Receipt_${payment._id.toString().slice(-6).toUpperCase()}.pdf`,
-                content: receiptBuffer,
-                contentType: 'application/pdf'
-              }
-            ]
-          });
-          paymentLogger.info(`Receipt emailed to parents of student ${payment.student._id}`);
-        }
-      } catch (err) {
-        paymentLogger.error(`Failed to send receipt email: ${err.message}`);
-      }
-
-      if (balanceData.isFullyPaid) {
+      if (balanceData.totalBalance <= 0) {
         await StudentProfile.findOneAndUpdate(
           { user: payment.student._id },
           { isClearedForExams: true }
         );
-        paymentLogger.info(`Student ${payment.student._id} fully paid and cleared for exams.`);
+        paymentLogger.info(`Student ${payment.student._id} cleared for exams.`);
       }
 
+      try {
+        const profile = await StudentProfile.findOne({ user: payment.student._id }).populate('parents');
+        const receiptBuffer = await pdfService.generatePaymentReceipt(payment, profile, balanceData);
+        
+        if (profile.parents?.length > 0) {
+          const parentEmails = profile.parents.map(p => p.email);
+          await mailService.sendMail({
+            to: parentEmails,
+            subject: `Receipt: ${payment.feeType} - ${payment.term} Term`,
+            message: `Official receipt for payment of N${payment.amount.toLocaleString()}.`,
+            attachments: [{
+              filename: `Receipt_${payment._id.toString().slice(-6)}.pdf`,
+              content: receiptBuffer,
+              contentType: 'application/pdf'
+            }]
+          });
+        }
+      } catch (err) {
+        paymentLogger.error(`Bursary automation failed: ${err.message}`);
+      }
     } else {
       payment.status = 'rejected';
       payment.rejectionReason = rejectionReason;
-      paymentLogger.warn(`Payment ${paymentId} rejected by Bursar ${bursarId}`);
       await payment.save();
     }
-
     return payment;
   }
 
- 
   async getPendingPayments() {
     return await Payment.find({ status: 'pending' })
       .populate('student', 'firstName lastName email')

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   CheckCircle, XCircle, Eye, Download, Search, Filter, ShieldCheck, Loader2 
 } from "lucide-react";
-import { Card,  } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger 
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
 import api from "@/lib/api"; 
 
 export default function PaymentApprovals() {
@@ -26,10 +25,11 @@ export default function PaymentApprovals() {
   const fetchPending = async () => {
     try {
       const res = await api.get("/payment/pending");
+      // res.data.data is the array returned by the controller
       setPendingPayments(res.data.data || []);
     } catch (err) {
       console.error("Payment Fetch Error:", err);
-      toast.error("Could not fetch pending payments. Session might be expired.");
+      toast.error("Could not fetch records.");
     } finally {
       setLoading(false);
     }
@@ -41,14 +41,16 @@ export default function PaymentApprovals() {
       toast.success(`Payment ${status === 'verified' ? 'Approved' : 'Rejected'}`);
       fetchPending();
     } catch (err) {
-      toast.error("Action failed. Try again.");
+      toast.error("Action failed.");
     }
   };
 
-  const filteredPayments = pendingPayments.filter(p => 
-    p.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.reference?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // UPDATED FILTER: Matches backend fields
+  const filteredPayments = pendingPayments.filter(p => {
+    const studentFullName = `${p.student?.firstName} ${p.student?.lastName}`.toLowerCase();
+    return studentFullName.includes(searchTerm.toLowerCase()) ||
+           p.transactionReference?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
@@ -84,9 +86,6 @@ export default function PaymentApprovals() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="w-full sm:w-auto rounded-xl font-bold">
-          <Filter size={18} className="mr-2"/> Filter
-        </Button>
       </div>
 
       <Card className="border-slate-200 shadow-sm rounded-3xl overflow-hidden bg-white">
@@ -94,9 +93,9 @@ export default function PaymentApprovals() {
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow>
-                <TableHead className="pl-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Student / Parent</TableHead>
+                <TableHead className="pl-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Student</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Amount</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Purpose</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Fee Type</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400">Proof</TableHead>
                 <TableHead className="text-right pr-6 font-black uppercase text-[10px] tracking-widest text-slate-400">Action</TableHead>
               </TableRow>
@@ -106,16 +105,20 @@ export default function PaymentApprovals() {
                 <TableRow key={payment._id} className="hover:bg-slate-50/50 transition-colors">
                   <TableCell className="pl-6">
                     <div className="flex flex-col">
-                      <span className="font-black text-slate-800 italic tracking-tighter uppercase">{payment.studentName}</span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Ref: {payment.reference}</span>
+                      <span className="font-black text-slate-800 italic tracking-tighter uppercase">
+                        {payment.student?.firstName} {payment.student?.lastName}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        Ref: {payment.transactionReference}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell className="font-black italic text-slate-700 whitespace-nowrap">
-                    ₦{payment.amount.toLocaleString()}
+                  <TableCell className="font-black italic text-slate-700 whitespace-nowrap text-sm">
+                    ₦{payment.amount?.toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none font-bold uppercase text-[9px] tracking-widest">
-                      {payment.purpose}
+                      {payment.feeType}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -125,25 +128,22 @@ export default function PaymentApprovals() {
                           <Eye size={18} />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-xl rounded-3xl">
+                      <DialogContent className="max-w-xl rounded-3xl bg-white">
                         <DialogHeader>
-                          <DialogTitle className="font-black uppercase italic tracking-tighter">Proof of Payment</DialogTitle>
-                          <DialogDescription className="font-medium text-slate-500">
-                            Verification for {payment.studentName}'s tuition.
-                          </DialogDescription>
+                          <DialogTitle className="font-black uppercase italic tracking-tighter">Receipt Verification</DialogTitle>
                         </DialogHeader>
                         <div className="mt-4 border rounded-2xl overflow-hidden bg-slate-50 p-2">
                           <img 
-                            src={payment.receiptUrl} 
-                            alt="Receipt Proof" 
+                            src={payment.proofOfPayment} 
+                            alt="Receipt" 
                             className="w-full h-auto object-contain max-h-[500px] rounded-xl" 
                           />
                         </div>
-                        <div className="flex justify-between items-center mt-6">
+                        <div className="flex justify-end mt-4">
                           <Button 
                             variant="outline" 
-                            className="rounded-xl font-bold uppercase text-xs" 
-                            onClick={() => window.open(payment.receiptUrl, '_blank')}
+                            className="rounded-xl font-bold uppercase text-xs h-9" 
+                            onClick={() => window.open(payment.proofOfPayment, '_blank')}
                           >
                             <Download size={14} className="mr-2"/> View Full Size
                           </Button>
@@ -155,14 +155,14 @@ export default function PaymentApprovals() {
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      className="text-rose-500 hover:bg-rose-50 rounded-xl" 
+                      className="text-rose-500 hover:bg-rose-50 rounded-xl h-9" 
                       onClick={() => handleAction(payment._id, 'rejected')}
                     >
                       <XCircle size={20} />
                     </Button>
                     <Button 
                       size="sm" 
-                      className="bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold uppercase tracking-tighter italic" 
+                      className="bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold uppercase tracking-tighter italic h-9" 
                       onClick={() => handleAction(payment._id, 'verified')}
                     >
                       <CheckCircle size={16} className="mr-2" /> Approve
