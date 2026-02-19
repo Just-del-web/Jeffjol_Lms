@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   ShieldAlert, UserPlus, Search, MoreVertical, UserCog, 
-  Lock, History, CheckCircle2, Copy, Loader2 
+  Lock, History, CheckCircle2, Copy, Loader2, ArrowUpCircle, UserCheck, Trash2 
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,8 +13,18 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import api from "@/lib/api";
 import { toast } from "sonner";
+
+const CLASSES = [
+  "Playgroup", "Pre-Nursery", "Nursery 1", "Nursery 2", "Reception",
+  "Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5", "Primary 6",
+  "JSS1", "JSS2", "JSS3", "SS1", "SS2", "SS3"
+];
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -22,11 +32,14 @@ export default function UserManagement() {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
 
+  const [promoData, setPromoData] = useState({ from: "", to: "" });
+  const [promoLoading, setPromoLoading] = useState(false);
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/admin/users?role=${activeTab}&search=${search}`);
-      setUsers(res.data.data.users);
+      setUsers(res.data.data.users || []);
     } catch (err) {
       toast.error("Failed to load registry.");
     } finally {
@@ -36,27 +49,86 @@ export default function UserManagement() {
 
   useEffect(() => { fetchUsers(); }, [activeTab, search]);
 
+  const handleStatusChange = async (userId, newStatus) => {
+    const loadingToast = toast.loading(`Updating status to ${newStatus}...`);
+    try {
+      await api.patch("/operations/admin/user-status", { userId, status: newStatus });
+      toast.success(`Account successfully marked as ${newStatus}`, { id: loadingToast });
+      await fetchUsers(); // Re-fetch data to update UI state
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Status update failed.", { id: loadingToast });
+    }
+  };
+
+  const handlePromotion = async () => {
+    if (!promoData.from || !promoData.to) return toast.error("Select both classes.");
+    setPromoLoading(true);
+    try {
+      const res = await api.post("/operations/admin/promote", { 
+        fromClass: promoData.from, 
+        toClass: promoData.to 
+      });
+      toast.success(res.data.message);
+      await fetchUsers();
+    } catch (err) {
+      toast.error("Promotion cycle failed.");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   const copyToClipboard = (id, type) => {
     navigator.clipboard.writeText(id);
-    toast.success(`${type} ID copied to clipboard!`);
+    toast.success(`${type} ID copied!`);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">User Registry</h1>
-          <p className="text-slate-500 text-sm">Centralized identity and access management for Jeffjol LMS.</p>
+          <p className="text-slate-500 text-sm">Manage student status and school-wide promotions.</p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl h-12 px-6">
-          <UserPlus className="mr-2 h-4 w-4" /> Add Staff
-        </Button>
+        
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-indigo-200 text-indigo-600 font-bold rounded-xl h-12">
+                <ArrowUpCircle className="mr-2 h-4 w-4" /> Bulk Promote
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-3xl bg-white">
+              <DialogHeader>
+                <DialogTitle className="font-black italic uppercase tracking-tighter">Class Advancement</DialogTitle>
+                <DialogDescription>Move students to the next level.</DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <Select onValueChange={(v) => setPromoData({ ...promoData, from: v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="From Class" /></SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select onValueChange={(v) => setPromoData({ ...promoData, to: v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="To Class" /></SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button onClick={handlePromotion} disabled={promoLoading} className="w-full bg-indigo-600 rounded-xl h-12 font-black uppercase italic">
+                  {promoLoading ? <Loader2 className="animate-spin" /> : "Confirm Promotion"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
-        {/* 1. USER LIST */}
-        <Card className="lg:col-span-3 border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <Card className="lg:col-span-3 border-slate-200 rounded-3xl overflow-hidden shadow-sm bg-white">
           <CardHeader className="bg-white pb-4 border-b">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full">
@@ -82,7 +154,7 @@ export default function UserManagement() {
             {loading ? (
               <div className="p-20 text-center flex flex-col items-center gap-3">
                 <Loader2 className="animate-spin text-indigo-600" />
-                <p className="text-slate-400 text-sm font-medium">Reading registry...</p>
+                <p className="text-slate-400 text-sm font-medium tracking-tighter uppercase italic">Syncing Registry...</p>
               </div>
             ) : (
               <Table>
@@ -97,25 +169,34 @@ export default function UserManagement() {
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user._id} className="group hover:bg-slate-50 transition-colors">
-                      <TableCell className="pl-6">
+                      <TableCell className="pl-6 py-4">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-800">{user.firstName} {user.lastName}</span>
+                          <span className="font-bold text-slate-800 uppercase italic tracking-tighter">{user.firstName} {user.lastName}</span>
                           <span className="text-[10px] uppercase font-bold text-indigo-500 tracking-tighter">{user.role}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <Button 
-                          variant="ghost" 
-                          size="sm" 
+                          variant="ghost" size="sm" 
                           onClick={() => copyToClipboard(user._id, user.role)}
-                          className="h-8 w-8 rounded-lg hover:bg-indigo-50 hover:text-indigo-600"
+                          className="h-8 w-8 rounded-lg hover:bg-indigo-50"
                         >
                           <Copy size={14} />
                         </Button>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className={user.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}>
-                          {user.isActive ? "Active" : "Suspended"}
+                        {/* ROBUST BADGE LOGIC */}
+                        <Badge 
+                          variant="outline" 
+                          className={`rounded-lg px-2 py-0.5 font-black italic border-none text-[10px] uppercase ${
+                            user.profile?.status === 'suspended' ? 'bg-amber-50 text-amber-700' :
+                            user.profile?.status === 'withdrawn' ? 'bg-rose-50 text-rose-700' :
+                            user.profile?.status === 'active' || user.isActive ? 'bg-emerald-50 text-emerald-700' : 
+                            'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {/* Prioritize the status string from the StudentProfile schema */}
+                          {user.profile?.status || (user.isActive ? "Active" : "Suspended")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right pr-6">
@@ -125,11 +206,30 @@ export default function UserManagement() {
                               <MoreVertical size={16} />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-slate-200">
-                            <DropdownMenuItem className="cursor-pointer font-medium"><UserCog className="mr-2 h-4 w-4" /> Edit Profile</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer font-medium"><ShieldAlert className="mr-2 h-4 w-4" /> Reset Security</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-rose-600 cursor-pointer font-bold"><Lock className="mr-2 h-4 w-4" /> Suspend Account</DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-56 rounded-2xl shadow-xl bg-white p-2 border-slate-100">
+                            <DropdownMenuItem className="cursor-pointer font-bold text-xs rounded-xl">
+                              <UserCog className="mr-2 h-4 w-4" /> Edit Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1" />
+                            
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(user._id, 'active')}
+                              className="cursor-pointer font-bold text-xs rounded-xl text-emerald-600"
+                            >
+                              <UserCheck className="mr-2 h-4 w-4" /> Set as Active
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(user._id, 'suspended')}
+                              className="cursor-pointer font-bold text-xs rounded-xl text-amber-600"
+                            >
+                              <Lock className="mr-2 h-4 w-4" /> Suspend Account
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(user._id, 'withdrawn')}
+                              className="cursor-pointer font-bold text-xs rounded-xl text-rose-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Withdraw Student
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -141,7 +241,6 @@ export default function UserManagement() {
           </CardContent>
         </Card>
 
-        {/* 2. AUDIT LOG */}
         <div className="space-y-6">
           <Card className="border-slate-200 rounded-[2rem] shadow-sm bg-white overflow-hidden">
             <CardHeader className="bg-slate-50 border-b">
@@ -150,11 +249,10 @@ export default function UserManagement() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              <LogItem action="Role Update" user="Admin_Nmezi" time="2m ago" detail="Promoted User #992 to Teacher" />
-              <LogItem action="Security Log" user="System" time="14h ago" detail="Failed login attempt from IP 102.89.x.x" />
-              <LogItem action="Family Link" user="Admin_Nmezi" time="1d ago" detail="Linked Student Chidera to Parent Nmezi" />
-              <Button variant="outline" className="w-full text-[10px] font-black uppercase tracking-widest border-slate-200 hover:bg-slate-50 h-10 rounded-xl">
-                Access Security Vault
+              <LogItem action="Status" user="Admin_Nmezi" time="Just Now" detail="Modified user permission flags" />
+              <LogItem action="Security" user="System" time="1h ago" detail="Class list promotion completed" />
+              <Button variant="outline" className="w-full text-[10px] font-black uppercase tracking-widest h-10 rounded-xl">
+                System Vault
               </Button>
             </CardContent>
           </Card>

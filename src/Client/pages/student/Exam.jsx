@@ -21,8 +21,7 @@ export default function StudentExams() {
         setExams(res.data.data.exams || []);
         setIsCleared(res.data.data.isCleared);
       } catch (err) {
-        toast.error("Failed to load examinations.");
-        console.error(err);
+        toast.error(err.message);
       } finally {
         setLoading(false);
       }

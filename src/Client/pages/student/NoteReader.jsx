@@ -20,7 +20,7 @@ export default function NoteReader() {
         const res = await api.get(`/academic/read/${id}`);
         setNote(res.data.data);
       } catch (err) {
-        toast.error("Error loading note content.");
+        toast.error(err.message);
         navigate("/student/library");
       } finally {
         setLoading(false);

@@ -3,9 +3,7 @@ import { successResponse, errorResponse } from "../utils/helper.js";
 
 const opsService = new OperationsService();
 
-/**
- * --- TEACHER: RECORD GRADES ---
- */
+
 export const enterGrades = async (req, res) => {
   try {
     const grade = await opsService.recordGrade(req.userId, req.body);
@@ -15,9 +13,6 @@ export const enterGrades = async (req, res) => {
   }
 };
 
-/**
- * --- ADMIN: PROMOTE CLASS ---
- */
 export const promoteStudents = async (req, res) => {
   try {
     const { fromClass, toClass } = req.body;
@@ -30,10 +25,6 @@ export const promoteStudents = async (req, res) => {
   }
 };
 
-/**
- * --- ADMIN: UPDATE USER STATUS ---
- * Used to suspend, withdraw, or reactivate a student/staff
- */
 export const updateUserStatus = async (req, res) => {
   try {
     const { userId, status } = req.body;

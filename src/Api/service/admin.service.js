@@ -38,7 +38,7 @@ export const createAnnouncement = async (adminId, data) => {
 };
 
 export const broadcastEmail = async (broadcastData) => {
-  return await mailService.sendSchoolBroadcast(broadcastData);
+  return await MailService.sendSchoolBroadcast(broadcastData);
 };
 
 export const createCourse = async (courseData) => {

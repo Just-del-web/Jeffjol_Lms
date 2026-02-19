@@ -20,7 +20,7 @@ export default function StudentPayments() {
       const res = await api.get(`/bursary/my-balance?term=${term}&session=${session}`);
       setFinances(res.data.data);
     } catch (err) {
-      toast.error("Failed to load financial records.");
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

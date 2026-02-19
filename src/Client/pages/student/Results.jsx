@@ -18,12 +18,11 @@ export default function StudentResults() {
   const fetchResults = async () => {
     setLoading(true);
     try {
-      // Backend now respects term/session query params
       const res = await api.get(`/result/my-history?term=${term}&session=${session}`);
       setResults(res.data.data.history || []);
       setAnalytics(res.data.data.analytics);
     } catch (err) {
-      toast.error("Failed to load academic records.");
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

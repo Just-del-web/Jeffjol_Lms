@@ -22,8 +22,7 @@ export default function SubjectLibrary() {
         const res = await api.get("/academic/library");
         setMaterials(res.data.data);
       } catch (err) {
-        toast.error("Failed to load library content.");
-        console.error("Library Error:", err);
+        toast.error(err.message);
       } finally {
         setLoading(false);
       }

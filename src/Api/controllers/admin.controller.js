@@ -109,9 +109,10 @@ export const getAllUsers = async (req, res, next) => {
         { email: { $regex: search, $options: 'i' } }
       ];
     }
-
+ 
     const users = await User.find(query)
       .select('-password') 
+      .populate('profile') 
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -121,7 +122,7 @@ export const getAllUsers = async (req, res, next) => {
     return res.status(200).json(successResponse(200, "Users fetched.", {
       users,
       totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      currentPage: Number(page),
       totalUsers: total
     }));
   } catch (error) {

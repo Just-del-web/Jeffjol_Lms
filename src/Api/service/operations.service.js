@@ -1,6 +1,7 @@
 
 import StudentProfile from '../models/student_profile.model.js';
 import { Gradebook } from '../models/gradeBook.model.js';
+import { User } from '../models/user.model.js';
 
 export class OperationsService {
   
@@ -31,10 +32,19 @@ export class OperationsService {
   }
 
   async toggleUserStatus(userId, status) {
-    return await StudentProfile.findOneAndUpdate(
+    const profile = await StudentProfile.findOneAndUpdate(
       { user: userId },
       { status },
       { new: true }
     );
+
+    const isActive = status === 'active';
+    
+    await User.findByIdAndUpdate(userId, { 
+      isActive: isActive,
+      $inc: { tokenVersion: isActive ? 0 : 1 } 
+    });
+
+    return profile;
   }
 }
