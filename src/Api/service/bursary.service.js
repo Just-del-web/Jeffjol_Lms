@@ -14,7 +14,6 @@ export class BursaryService {
 
   
   async getStudentBalance(studentId, term, session) {
-
     const profile = await StudentProfile.findOne({ user: studentId });
     if (!profile) throw new Error("STUDENT_NOT_FOUND");
 
@@ -24,24 +23,25 @@ export class BursaryService {
       session 
     });
     
-    if (!feeConfig) return { totalOwed: 0, paid: 0, balance: 0 };
+    const history = await Payment.find({ student: studentId, term, session })
+      .sort({ createdAt: -1 });
 
-    const paymentSum = await Payment.aggregate([
-      { $match: { student: studentId, term, session, status: 'verified' } },
-      { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
+    const totalPaid = history
+      .filter(p => p.status === 'verified')
+      .reduce((sum, p) => sum + p.amount, 0);
 
-    const totalPaid = paymentSum[0]?.total || 0;
-    const balance = feeConfig.amount - totalPaid;
+    const billedAmount = feeConfig ? feeConfig.amount : 0;
+    const balance = billedAmount - totalPaid;
 
     return {
-      requiredFee: feeConfig.amount,
-      totalPaid,
-      balance: balance < 0 ? 0 : balance,
-      isFullyPaid: balance <= 0
+      studentId: profile.studentId,
+      totalBilled: billedAmount, 
+      totalPaid: totalPaid,     
+      totalBalance: balance < 0 ? 0 : balance, 
+      history: history,        
+      isCleared: balance <= 0
     };
   }
-
 
   async getClassFinancials(className, term, session) {
     const students = await StudentProfile.find({ currentClass: className })

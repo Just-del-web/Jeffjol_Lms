@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 
 // Page Imports
 import AdminDashboard from "./pages/admin/Dashboard";
+import BursaryManagement from "./pages/admin/Bursary";
 import UserManagement from "./pages/admin/Users";
 import PaymentApprovals from "./pages/admin/PaymentApprovals";
 import SchoolBroadcast from "./pages/admin/Broadcast";
@@ -17,6 +18,7 @@ import FamilyBursary from "./pages/parents/FamilyBusary";
 import FamilyLinker from "./pages/admin/FamilyLinker";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentExams from "./pages/student/Exam";
+import LiveExam from "./pages/student/LiveExam";
 import SubjectLibrary from "./pages/student/Library";
 import NoteReader from "./pages/student/NoteReader";
 import StudentPayments from "./pages/student/Payment";
@@ -49,7 +51,6 @@ export default function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
 
-        {/* PROTECTED WRAPPER: All logic for role-checking is now inside DashboardLayout */}
         <Route element={<DashboardLayout />}>
           
           {/* ADMIN */}
@@ -59,6 +60,8 @@ export default function App() {
           <Route path="/admin/broadcast" element={<SchoolBroadcast />} />
           <Route path="/admin/noticeboard" element={<Noticeboard />} />
           <Route path="/admin/family-linker" element={<FamilyLinker />} />
+          <Route path="/admin/bursary" element={<BursaryManagement />} />
+
 
 
           {/* PARENT */}
@@ -74,6 +77,8 @@ export default function App() {
           <Route path="/student/exams" element={<StudentExams />} />
           <Route path="/student/notes" element={<NoteReader />} />
           <Route path="/student/analytics" element={<ClassAnalytics />} />
+          <Route path="/student/live/:examId" element={<LiveExam />} />
+
 
           {/* TEACHER */}
           <Route path="/teacher" element={<ClassAnalytics />} />

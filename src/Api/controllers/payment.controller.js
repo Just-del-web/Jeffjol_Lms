@@ -1,11 +1,14 @@
 import { PaymentService } from "../service/payment.service.js";
 import StudentProfile from "../models/student_profile.model.js"; 
+import { BursaryService } from "../service/bursary.service.js";
+import { PDFService } from "../service/pdf.service.js";
 import { successResponse, errorResponse } from "../utils/helper.js";
 import logger from "../logging/logger.js";
 
 const paymentControllerLogger = logger.child({ service: "PAYMENT_CONTROLLER" });
 const paymentService = new PaymentService();
-
+const bursaryService = new BursaryService();
+const pdfService = new PDFService();
 export const submitProof = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -62,6 +65,29 @@ export const getPendingPayments = async (req, res, next) => {
     return res.status(200).json(successResponse(200, "Pending queue synchronized.", payments));
   } catch (error) {
     paymentControllerLogger.error(`Fetch Error: ${error.message}`);
+    next(error);
+  }
+};
+
+export const downloadReceipt = async (req, res, next) => {
+  try {
+    const { paymentId } = req.params;
+    
+    const payment = await paymentService.getPaymentById(paymentId); 
+    if (!payment || payment.status !== 'verified') {
+      return res.status(400).json(errorResponse(400, "Receipt not available or payment not verified."));
+    }
+
+    const profile = await StudentProfile.findOne({ user: payment.student }).populate('user');
+    const balanceData = await bursaryService.getStudentBalance(payment.student, payment.term, payment.session);
+
+    const receiptBuffer = await pdfService.generatePaymentReceipt(payment, profile, balanceData);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Receipt_${paymentId.slice(-6)}.pdf`);
+    
+    return res.send(receiptBuffer);
+  } catch (error) {
+    paymentControllerLogger.error(`Receipt Download Error: ${error.message}`);
     next(error);
   }
 };

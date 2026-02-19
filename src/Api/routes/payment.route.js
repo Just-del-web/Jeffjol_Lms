@@ -23,6 +23,12 @@ router.get(
   PaymentController.getPendingPayments
 );
 
+router.get(
+  "/receipt/:paymentId", 
+  restrictTo('student', 'parent', 'admin'),
+  PaymentController.downloadReceipt
+);
+
 router.patch(
   "/verify/:paymentId", 
   restrictTo('admin'), 

@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 import StudentProfile from "../models/student_profile.model.js";
 import logger from "../logging/logger.js";
-import * as helper from "../utils/helper.js"; 
+import * as helper from "../utils/helper.js";
 import config from "../config/secret.config.js";
 
 const authLogger = logger.child({ service: "AUTH_SERVICE" });
@@ -15,7 +15,7 @@ export class AuthService {
     return geo ? `${geo.city}, ${geo.country}` : "Unknown Location";
   }
 
- async signup(data, ip, userAgent) {
+  async signup(data, ip, userAgent) {
     return await helper.executeWithTransaction(async (session) => {
       authLogger.info(`Signup attempt initiated: ${data.email}`);
       const normalizedEmail = data.email.toLowerCase();
@@ -26,7 +26,6 @@ export class AuthService {
       const deviceDetails = helper.parseUserAgent(userAgent);
       const location = this._getLocation(ip);
 
-      // 1. Create the User
       const [user] = await User.create(
         [
           {
@@ -48,10 +47,9 @@ export class AuthService {
             ],
           },
         ],
-        { session }
+        { session },
       );
 
-      // 2. Create Student Profile (Only for students)
       if (user.role === "student") {
         const [profile] = await StudentProfile.create(
           [
@@ -61,38 +59,43 @@ export class AuthService {
               gender: data.gender,
               classArm: data.classArm || "A",
               academicYear: "2024/2025",
-              schoolId: data.schoolId || `JMS-${Date.now().toString().slice(-4)}`, // Fallback ID
-              isClearedForExams: false, 
+              schoolId:
+                data.schoolId || `JMS-${Date.now().toString().slice(-4)}`, 
+              isClearedForExams: false,
             },
           ],
-          { session }
+          { session },
         );
 
-        // Link profile back to user
         user.profile = profile._id;
         await user.save({ session, validateBeforeSave: false });
+      } else if (user.role === "parent") {
+        authLogger.info(`Parent profile initialized for: ${user.email}`);
       }
 
       // 3. Generate OTP
       const { otp } = await helper.createVerificationToken(
         user._id,
         session,
-        "signup-verification"
+        "signup-verification",
       );
 
       console.log(`\n[SECURITY] Verification OTP for ${user.email}: ${otp}\n`);
-      return { userId: user._id, email: user.email, requiresVerification: true };
+      return {
+        userId: user._id,
+        email: user.email,
+        requiresVerification: true,
+      };
     });
   }
 
   async verifySignupOtp(userId, otp) {
-
     await helper.validateToken(userId, otp, "signup-verification");
 
     const user = await User.findByIdAndUpdate(
       userId,
       { isVerified: true },
-      { new: true }
+      { new: true },
     );
 
     if (!user) throw new Error("USER_NOT_FOUND");
@@ -103,7 +106,7 @@ export class AuthService {
 
   async login(email, password, ip, userAgent) {
     authLogger.info(`Login attempt for: ${email}`);
-    
+
     const user = await User.findOne({ email: email.toLowerCase() })
       .select("+password +tokenVersion")
       .populate("profile");
@@ -132,18 +135,18 @@ export class AuthService {
       {
         $push: { activeSessions: { $each: [newSession], $slice: -5 } },
         $set: { lastLogin: new Date(), lastActiveIp: ip },
-      }
+      },
     );
 
     const token = jwt.sign(
-      { 
-        id: user._id, 
-        role: userRole, 
+      {
+        id: user._id,
+        role: userRole,
         tokenVersion: user.tokenVersion,
-        name: `${user.firstName} ${user.lastName}` 
+        name: `${user.firstName} ${user.lastName}`,
       },
       config.JWT_SECRET,
-      { expiresIn: config.JWT_EXPIRES_IN || "24h" }
+      { expiresIn: config.JWT_EXPIRES_IN || "24h" },
     );
 
     return {
@@ -151,7 +154,7 @@ export class AuthService {
       user: {
         id: user._id,
         name: `${user.firstName} ${user.lastName}`,
-        role: userRole, 
+        role: userRole,
         isVerified: user.isVerified,
         studentId: user.profile?.studentId || null,
       },
@@ -162,8 +165,12 @@ export class AuthService {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) throw new Error("USER_NOT_FOUND");
 
-    const { otp } = await helper.createVerificationToken(user._id, null, "password-reset");
-    
+    const { otp } = await helper.createVerificationToken(
+      user._id,
+      null,
+      "password-reset",
+    );
+
     // Log verification code to terminal for development
     console.log(`\n[SECURITY] Password Reset OTP for ${user.email}: ${otp}\n`);
 
@@ -183,7 +190,7 @@ export class AuthService {
       const accessToken = jwt.sign(
         { id: user._id, role: user.role, tokenVersion: user.tokenVersion },
         config.JWT_SECRET,
-        { expiresIn: '15m' } 
+        { expiresIn: "15m" },
       );
 
       return { accessToken };
@@ -193,8 +200,8 @@ export class AuthService {
   }
 
   async logout(userId) {
-    return await User.findByIdAndUpdate(userId, { 
-      $inc: { tokenVersion: 1 } 
+    return await User.findByIdAndUpdate(userId, {
+      $inc: { tokenVersion: 1 },
     });
   }
 }

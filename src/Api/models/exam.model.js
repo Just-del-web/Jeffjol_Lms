@@ -1,43 +1,40 @@
 import mongoose from 'mongoose';
 
-// --- QUESTION BANK MODEL ---
 const questionSchema = new mongoose.Schema({
   text: { type: String, required: true },
   image: { type: String }, 
   type: { type: String, enum: ['multiple-choice', 'theory'], default: 'multiple-choice' },
-  options: [{
-    text: { type: String, required: true },
-    letter: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] }
-  }],
-  correctAnswer: { type: String, required: true }, 
+  optionA: { type: String, required: true },
+  optionB: { type: String, required: true },
+  optionC: { type: String },
+  optionD: { type: String },
+  correctAnswer: { type: String, enum: ['A', 'B', 'C', 'D'], required: true }, 
   explanation: String, 
   marks: { type: Number, default: 2 },
   subject: { type: String, required: true, index: true },
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' }
 }, { timestamps: true });
 
-// --- EXAM MODEL ---
 const examSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   subject: { type: String, required: true },
+  term: { type: String, required: true },    
+  session: { type: String, required: true }, 
   duration: { type: Number, required: true }, 
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
-  sebRequired: { type: Boolean, default: true },
+  sebRequired: { type: Boolean, default: false }, 
   shuffleQuestions: { type: Boolean, default: true },
-  shuffleOptions: { type: Boolean, default: true },
   allowBacktrack: { type: Boolean, default: true }, 
   targetClass: { type: String, required: true }, 
-  targetArm: [String], 
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-  totalMarks: Number,
+  totalMarks: { type: Number, default: 0 },
   passPercentage: { type: Number, default: 50 },
-  status: { type: String, enum: ['draft', 'published', 'ongoing', 'closed'], default: 'draft' },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  status: { type: String, enum: ['draft', 'published', 'closed'], default: 'published' },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } 
 }, { timestamps: true });
 
-// --- RESULT MODEL ---
 const resultSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   exam: { type: mongoose.Schema.Types.ObjectId, ref: 'Exam', required: true },

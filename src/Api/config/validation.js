@@ -81,14 +81,20 @@ const examCreationSchema = Joi.object({
   subject: Joi.string().required(),
   duration: Joi.number().min(1).required(), // Minutes
   startTime: Joi.date().iso().required(),
+  term: Joi.string().required().messages({ 'any.required': 'Academic Term is required' }),
+  session: Joi.string().required().messages({ 'any.required': 'Academic Session is required' }),
   endTime: Joi.date().iso().min(Joi.ref('startTime')).required(),
   targetClass: Joi.string().required(),
   questionIds: Joi.array().items(Joi.string()).min(1).required().messages({
     'array.min': 'You must link at least one question to this exam'
   }),
   passPercentage: Joi.number().min(0).max(100).default(50),
-  sebRequired: Joi.boolean().default(true)
+  sebRequired: Joi.boolean().default(false),
+  shuffleQuestions: Joi.boolean().default(true),
+  allowBacktrack: Joi.boolean().default(true),
+  status: Joi.string().valid('draft', 'published', 'closed').default('published')
 });
+
 
 // 3. Validation for Student Submission
 const examSubmissionSchema = Joi.object({

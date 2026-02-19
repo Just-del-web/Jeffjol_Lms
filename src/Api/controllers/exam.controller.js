@@ -6,20 +6,18 @@ import logger from "../logging/logger.js";
 const cbtLogger = logger.child({ service: "CBT_CONTROLLER" });
 const cbtService = new CBTService();
 
-// STUDENT: Fetch available exams
 export const getStudentExams = async (req, res, next) => {
   try {
-    const exams = await cbtService.getAvailableExams(req.userId);
+    const data = await cbtService.getAvailableExams(req.userId);
+   
     return res.status(200).json(
-      successResponse(200, "Exams fetched successfully", exams)
+      successResponse(200, "Exams fetched successfully", data)
     );
   } catch (error) {
-    cbtLogger.error(`Fetch Exams Error: ${error.message}`);
     next(error);
   }
 };
 
-// STUDENT: Start an exam attempt
 export const startExamAttempt = async (req, res, next) => {
   try {
     const { examId } = req.params;
@@ -43,7 +41,6 @@ export const startExamAttempt = async (req, res, next) => {
   }
 };
 
-// STUDENT: Submit exam answers
 export const submitExam = async (req, res, next) => {
   try {
     const { examId, answers } = req.body; 
@@ -68,7 +65,6 @@ export const submitExam = async (req, res, next) => {
   }
 };
 
-// TEACHER/ADMIN: Add question to the bank
 export const addQuestionToBank = async (req, res, next) => {
   try {
     const question = await Question.create({
@@ -100,7 +96,6 @@ export const getAllQuestions = async (req, res, next) => {
   }
 };
 
-// TEACHER/ADMIN: Create a new exam paper
 export const createExamPaper = async (req, res, next) => {
   try {
     const exam = await cbtService.createExamPaper(req.body, req.userId);

@@ -52,7 +52,7 @@ const studentProfileSchema = new mongoose.Schema(
     },
     isClearedForExams: {
       type: Boolean,
-      default: true, 
+      default: false, 
     },
     gender: {
       type: String,

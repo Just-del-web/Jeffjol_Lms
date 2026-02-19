@@ -21,23 +21,11 @@ export const configureFees = async (req, res, next) => {
 
 export const getStudentBalance = async (req, res, next) => {
   try {
-    const { term, session, studentId } = req.query;
-    const { role, userId } = req;
-
-    let targetStudentId = userId;
-
-    if (role === 'parent' || role === 'admin') {
-      if (!studentId) {
-        return res.status(400).json(errorResponse(400, "Student ID is required for this view."));
-      }
-      
-      targetStudentId = studentId;
-    }
-
-    const balanceData = await bursaryService.getStudentBalance(targetStudentId, term, session);
+    const { term, session } = req.query;
+    const balanceData = await bursaryService.getStudentBalance(req.userId, term, session);
     
     return res.status(200).json(
-      successResponse(200, "Financial data retrieved.", balanceData)
+      successResponse(200, "Financial data synchronized.", balanceData)
     );
   } catch (error) {
     next(error);

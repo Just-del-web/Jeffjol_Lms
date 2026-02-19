@@ -94,4 +94,9 @@ async submitPaymentProof(studentUserId, paymentData, file) {
       .populate('student', 'firstName lastName email')
       .sort({ createdAt: 1 });
   }
+
+  async getPaymentById(id) {
+  return await Payment.findById(id);
 }
+}
+

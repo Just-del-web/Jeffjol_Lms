@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
-  LayoutDashboard, BookOpen, CreditCard, Users, Mail, 
+  LayoutDashboard, BookOpen, CreditCard, Users, Mail, LibraryBig,
   ShieldCheck, Menu, GraduationCap, LogOut, Megaphone, 
   FileText, BarChart3, Clock 
 } from "lucide-react";
@@ -17,6 +17,7 @@ const menuItems = {
     { name: "Mail Center", path: "/admin/broadcast", icon: Mail },
     { name: "Noticeboard", path: "/admin/noticeboard", icon: Megaphone },
     { name: "Family Linker", path: "/admin/family-linker", icon: ShieldCheck },
+    { name: "Bursary", path: "/admin/bursary", icon: LibraryBig },
   ],
   teacher: [
     { name: "Analytics", path: "/teacher", icon: BarChart3 },
