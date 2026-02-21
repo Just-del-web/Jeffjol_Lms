@@ -29,26 +29,13 @@ export default function SubjectLibrary() {
         const res = await api.get("/academic/library");
         setMaterials(res.data.data);
       } catch (err) {
-        toast.error("Library sync failed.");
+        toast.error("Network synchronization failed.");
       } finally {
         setLoading(false);
       }
     };
     fetchLibrary();
   }, []);
-
-  const handleViewVideo = (url) => {
-    if (!url) return toast.error("Asset link is missing.");
-    window.open(url, "_blank");
-  };
-
-  const handleResourceClick = (item) => {
-    if (item.contentType === "video") {
-      handleViewVideo(item.fileUrl);
-    } else {
-      navigate(`/student/read/${item._id}`);
-    }
-  };
 
   const filtered = materials.filter((item) => {
     const matchesSearch =
@@ -59,139 +46,112 @@ export default function SubjectLibrary() {
   });
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto p-4 md:p-8">
-      
-      {/* 1. RESPONSIVE HEADER */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-        <div className="w-full lg:w-auto">
-          <Badge className="bg-indigo-600 mb-2 uppercase font-black italic tracking-widest px-4 py-1 text-[10px]">
-            Academic Vault
-          </Badge>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">
-            Learning <span className="text-indigo-600">Resources</span>
+    <div className="space-y-6 animate-in fade-in duration-500 p-2 md:p-0">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">
+            Academic <span className="text-indigo-600">Vault</span>
           </h1>
-          <p className="text-slate-400 font-bold italic mt-2 uppercase text-[9px] md:text-[10px] tracking-widest">
-            Handwritten notes digitized for SS3 Class
+          <p className="text-slate-500 text-sm font-medium">
+            Digital resources synced to your current class.
           </p>
         </div>
-
-        {/* SEARCH BAR - FULL WIDTH ON MOBILE */}
-        <div className="relative w-full lg:w-96 group">
+        <div className="relative w-full md:w-80">
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             size={18}
           />
           <Input
-            className="pl-12 border-none bg-white shadow-xl shadow-slate-200/50 rounded-2xl h-14 md:h-16 font-bold focus:ring-2 focus:ring-indigo-500 text-base md:text-lg"
-            placeholder="Search notes or subjects..."
+            className="pl-10 border-slate-200 focus:ring-2 focus:ring-indigo-500 rounded-2xl h-12 bg-white shadow-sm"
+            placeholder="Search topics..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      {/* 2. RESPONSIVE TABS - HORIZONTAL SCROLL ON MOBILE */}
+      {/* TABS - MOBILE SCROLLABLE */}
       <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-100 p-1.5 rounded-[1.5rem] md:rounded-3xl h-14 md:h-16 w-full flex overflow-x-auto no-scrollbar justify-start shadow-inner border border-slate-200/50">
+        <TabsList className="bg-slate-100 p-1 rounded-2xl h-14 w-full md:w-auto justify-start overflow-x-auto no-scrollbar">
           <TabsTrigger
             value="all"
-            className="flex-shrink-0 rounded-xl md:rounded-2xl px-6 md:px-8 font-black uppercase text-[9px] md:text-[10px] tracking-widest h-full data-[state=active]:bg-white data-[state=active]:shadow-lg"
+            className="rounded-xl px-6 font-bold uppercase text-[10px]"
           >
-            All
+            All Materials
           </TabsTrigger>
           <TabsTrigger
             value="document"
-            className="flex-shrink-0 rounded-xl md:rounded-2xl px-6 md:px-8 font-black uppercase text-[9px] md:text-[10px] tracking-widest h-full text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-lg"
+            className="rounded-xl px-6 font-bold uppercase text-[10px]"
           >
             Study Notes
           </TabsTrigger>
           <TabsTrigger
             value="video"
-            className="flex-shrink-0 rounded-xl md:rounded-2xl px-6 md:px-8 font-black uppercase text-[9px] md:text-[10px] tracking-widest h-full text-amber-600 data-[state=active]:bg-white data-[state=active]:shadow-lg"
+            className="rounded-xl px-6 font-bold uppercase text-[10px]"
           >
-            Videos
+            Lectures
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {/* 3. GRID SYSTEM - ADAPTIVE COLUMNS */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-4">
-               <Skeleton className="h-48 md:h-64 w-full rounded-[2rem] md:rounded-[3rem]" />
-               <Skeleton className="h-6 w-3/4 rounded-xl" />
-            </div>
+            <Skeleton key={i} className="h-64 w-full rounded-[2.5rem]" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.length > 0 ? (
             filtered.map((item) => (
               <Card
                 key={item._id}
-                className="overflow-hidden border-none shadow-2xl shadow-slate-200/40 hover:shadow-indigo-200 transition-all duration-500 group cursor-pointer rounded-[2rem] md:rounded-[3rem] bg-white border-b-[6px] md:border-b-[8px] border-transparent hover:border-indigo-600"
-                onClick={() => handleResourceClick(item)}
+                className="overflow-hidden border-none shadow-xl shadow-slate-100/50 hover:shadow-indigo-100 transition-all group cursor-pointer rounded-[2rem] bg-white border-b-4 border-transparent hover:border-indigo-500"
+                onClick={() => navigate(`/student/read/${item._id}`)}
               >
-                <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/5 transition-colors" />
+                <div className="aspect-video bg-slate-50 flex items-center justify-center relative overflow-hidden">
                   {item.contentType === "video" ? (
                     <PlayCircle
-                      className="text-slate-200 group-hover:text-indigo-600 group-hover:scale-110 transition-all duration-700"
-                      size={60}
-                      md:size={80}
-                      strokeWidth={1}
+                      className="text-slate-200 group-hover:text-indigo-500 group-hover:scale-110 transition-all"
+                      size={64}
                     />
                   ) : (
                     <FileText
-                      className="text-slate-200 group-hover:text-indigo-600 group-hover:scale-110 transition-all duration-700"
-                      size={60}
-                      md:size={80}
-                      strokeWidth={1}
+                      className="text-slate-200 group-hover:text-indigo-500 group-hover:scale-110 transition-all"
+                      size={64}
                     />
                   )}
                   <Badge
-                    className="absolute top-4 right-4 md:top-6 md:right-6 bg-white/90 backdrop-blur-md text-indigo-600 font-black border-none shadow-xl px-3 md:px-4 py-1.5 text-[8px] md:text-[10px] uppercase tracking-tighter italic"
+                    className="absolute top-4 right-4 bg-white text-indigo-600 font-black italic border-none shadow-lg px-3 py-1 text-[9px] uppercase"
                     variant="outline"
                   >
                     {item.subject}
                   </Badge>
                 </div>
-                
-                <CardContent className="p-6 md:p-8">
-                  <h3 className="font-black text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors uppercase tracking-tight text-lg md:text-xl leading-tight italic">
+                <CardContent className="p-6">
+                  <h3 className="font-black text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors uppercase text-sm">
                     {item.title}
                   </h3>
-                  <div className="flex items-center gap-2 mt-3 md:mt-4">
-                     <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse" />
-                     <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ready for Review</p>
-                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 italic">
+                    Verified Resource
+                  </p>
                 </CardContent>
-
-                <CardFooter className="px-6 py-4 md:px-8 md:py-6 border-t border-slate-50 bg-slate-50/50 flex justify-between items-center group-hover:bg-indigo-50/30 transition-colors">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Instructor</span>
-                    <span className="text-[10px] md:text-[12px] font-black text-slate-700 uppercase italic">
-                      Teacher {item.uploadedBy?.lastName || "Admin"}
-                    </span>
-                  </div>
-                  <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 group-hover:rotate-12">
-                    <ArrowRight size={18} md:size={22} />
-                  </div>
+                <CardFooter className="px-6 py-4 border-t border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                    Instructor {item.uploadedBy?.lastName || "Admin"}
+                  </span>
+                  <BookOpen size={14} className="text-indigo-200" />
                 </CardFooter>
               </Card>
             ))
           ) : (
-            <div className="col-span-full py-24 md:py-40 text-center bg-white border-2 border-dashed border-slate-200 rounded-[2rem] md:rounded-[4rem] opacity-60 px-6">
-              <Search className="mx-auto text-slate-200 mb-6" size={60} md:size={80} strokeWidth={1} />
-              <p className="text-slate-400 font-black uppercase italic text-xs md:text-sm tracking-[0.4em]">
-                Vault currently empty
-              </p>
+            <div className="col-span-full py-20 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem] opacity-50 italic text-sm">
+              No resources found.
             </div>
           )}
         </div>
       )}
     </div>
-    
   );
 }
