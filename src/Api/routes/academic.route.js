@@ -12,20 +12,17 @@ router.get(
   restrictTo("student", "parent"),
   AcademicController.getMyLibrary,
 );
-
 router.get(
   "/read/:id",
-  restrictTo("student", "parent"),
+  restrictTo("student", "parent", "teacher", "admin"),
   AcademicController.readNoteContent,
 );
 
-// Add this to your academic.route.js
 router.get(
   "/teacher-history",
   restrictTo("teacher", "admin"),
-  AcademicController.getTeacherMaterials, // We need to create this
+  AcademicController.getTeacherMaterials,
 );
-
 
 router.post(
   "/upload",
@@ -40,10 +37,10 @@ router.patch(
   AcademicController.updateMaterial,
 );
 
-router.post(
-  "/schedule-live",
+router.delete(
+  "/delete/:id",
   restrictTo("teacher", "admin"),
-  AcademicController.uploadMaterial,
+  AcademicController.deleteMaterial,
 );
 
 export default router;

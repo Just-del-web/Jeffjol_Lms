@@ -75,7 +75,7 @@ export default function App() {
           <Route path="/student/results" element={<StudentResults />} />
           <Route path="/student/payments" element={<StudentPayments />} />
           <Route path="/student/exams" element={<StudentExams />} />
-          <Route path="/student/notes" element={<NoteReader />} />
+          <Route path="/student/read/:id" element={<NoteReader />} />
           <Route path="/student/analytics" element={<ClassAnalytics />} />
           <Route path="/student/live/:examId" element={<LiveExam />} />
 

@@ -1,5 +1,5 @@
 import { Content } from "../models/content.model.js";
-import { uploadToCloudinary } from "../utils/cloudinary.util.js";
+import { uploadToCloudinary, cloudinary } from "../utils/cloudinary.util.js";
 import Tesseract from "tesseract.js";
 import logger from "../logging/logger.js";
 
@@ -11,44 +11,45 @@ export class AcademicService {
     let extractedText = "";
 
     if (file) {
-      const resourceType = data.contentType === "video" ? "video" : "raw";
-      uploadResult = await uploadToCloudinary(
-        file.buffer,
-        "academic_materials",
-        resourceType,
-      );
-
       if (data.isScannedNote === "true" && file.mimetype.startsWith("image/")) {
-        academicLogger.info("Initiating Tesseract OCR scanning...");
-        const {
-          data: { text },
-        } = await Tesseract.recognize(file.buffer, "eng");
+        try {
+          academicLogger.info("Initiating OCR scanning for: " + data.title);
+          
+          const result = await Tesseract.recognize(file.buffer, "eng", {
+            logger: m => console.log(`[OCR PROGRESS] ${m.status}: ${Math.round(m.progress * 100)}%`)
+          });
 
-        extractedText = text.replace(/\n\s*\n/g, "\n").trim();
+          extractedText = result.data.text.replace(/\n\s*\n/g, "\n").trim();
+          academicLogger.info("OCR scan complete. Length: " + extractedText.length);
+        } catch (ocrErr) {
+          academicLogger.error("OCR Engine Error: " + ocrErr.message);
+        }
       }
+
+      uploadResult = await uploadToCloudinary(file.buffer, "academic_materials", "auto");
     }
 
     return await Content.create({
-      ...data,
-      uploadedBy: teacherId,
+      title: data.title,
+      subject: data.subject,
+      targetClass: data.targetClass,
+      contentType: data.contentType, 
       fileUrl: uploadResult.secure_url,
       cloudinaryId: uploadResult.public_id,
-      rawText: extractedText,
+      uploadedBy: teacherId,
+      isScannedNote: data.isScannedNote === "true",
+      rawText: extractedText || "No text could be extracted from this image.",
     });
   }
+  async deleteMaterial(contentId, teacherId) {
+    const material = await Content.findOne({ _id: contentId, uploadedBy: teacherId });
+    if (!material) throw new Error("MATERIAL_NOT_FOUND");
 
-  async updateMaterialContent(contentId, teacherId, updateData) {
-    return await Content.findOneAndUpdate(
-      { _id: contentId, uploadedBy: teacherId },
-      { $set: updateData },
-      { new: true },
-    );
-  }
+    if (material.cloudinaryId) {
+      await cloudinary.uploader.destroy(material.cloudinaryId);
+    }
 
-  async getNoteForReading(contentId) {
-    return await Content.findById(contentId)
-      .populate("uploadedBy", "firstName lastName")
-      .lean();
+    return await Content.findByIdAndDelete(contentId);
   }
 
   async getStudentMaterials(className, subject = null) {
@@ -57,21 +58,16 @@ export class AcademicService {
 
     return await Content.find(query)
       .populate("uploadedBy", "firstName lastName")
-      .select("-rawText")
       .sort({ createdAt: -1 });
   }
 
   async getTeacherMaterials(teacherId) {
-    return await Content.find({ uploadedBy: teacherId }).sort({
-      createdAt: -1,
-    });
+    return await Content.find({ uploadedBy: teacherId }).sort({ createdAt: -1 });
   }
 
-  async scheduleLiveClass(teacherId, classData) {
-    return await Content.create({
-      ...classData,
-      contentType: "live_class",
-      uploadedBy: teacherId,
-    });
+  async getNoteForReading(contentId) {
+    return await Content.findById(contentId)
+      .populate("uploadedBy", "firstName lastName")
+      .lean();
   }
 }
