@@ -30,7 +30,7 @@ export default function StudentExams() {
   }, []);
 
   const handleStartExam = (examId) => {
-    navigate(`/exam/live/${examId}`);
+    navigate(`/student/live/${examId}`);
   };
 
   if (loading) {

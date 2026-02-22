@@ -26,14 +26,31 @@ export default function GradeEntry() {
   ];
 
   const fetchStudents = async (val) => {
+    if (!subject) return toast.error("Enter a Subject first to check for existing scores.");
     setClassName(val);
     setIsFetching(true);
     try {
       const res = await api.get(`/result/class-list/${val}`);
       const studentData = res.data.data || [];
+      
+      const existingRes = await api.get(`/result/fetch-existing?subject=${subject}&className=${val}&term=${term}&session=${session}`);
+      const existingScores = existingRes.data.data || [];
+
+      const initialGrades = {};
+      existingScores.forEach(res => {
+        initialGrades[res.student] = {
+          ca: res.caScore || 0,
+          exam: res.examScore || res.score || 0, 
+          writingSkill: res.behavioralData?.writingSkill || "Good",
+          punctuality: res.behavioralData?.punctuality || "Good",
+          neatness: res.behavioralData?.neatness || "Good",
+        };
+      });
+
+      setGrades(initialGrades);
       setStudents(studentData);
     } catch (err) {
-      toast.error("Class list unavailable.");
+      toast.error("Error syncing scores.");
     } finally {
       setIsFetching(false);
     }

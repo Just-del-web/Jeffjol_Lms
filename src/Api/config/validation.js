@@ -60,41 +60,36 @@ const otpVerifySchema = Joi.object({
 /** --- CBT / EXAM SCHEMAS --- */
 
 // 1. Validation for adding questions to the Bank
+// 1. Updated Question Bank (Matches your flat Mongoose Model)
 const questionBankSchema = Joi.object({
-  text: Joi.string().required().messages({ 'any.required': 'Question text is mandatory' }),
+  text: Joi.string().required(),
   subject: Joi.string().required(),
-  type: Joi.string().valid('multiple-choice', 'theory').default('multiple-choice'),
-  options: Joi.array().items(
-    Joi.object({
-      text: Joi.string().required(),
-      letter: Joi.string().valid('A', 'B', 'C', 'D', 'E').required()
-    })
-  ).min(2).required().messages({ 'array.min': 'Multiple choice questions need at least 2 options' }),
-  correctAnswer: Joi.string().valid('A', 'B', 'C', 'D', 'E').required(),
+  optionA: Joi.string().required(),
+  optionB: Joi.string().required(),
+  optionC: Joi.string().optional().allow(''),
+  optionD: Joi.string().optional().allow(''),
+  correctAnswer: Joi.string().valid('A', 'B', 'C', 'D').required(),
   marks: Joi.number().min(1).default(2),
   difficulty: Joi.string().valid('easy', 'medium', 'hard').default('medium')
 });
 
-// 2. Validation for creating an Exam Paper (Linking questions)
+// 2. Updated Exam Creation (Matches your Model requirements)
 const examCreationSchema = Joi.object({
   title: Joi.string().required(),
   subject: Joi.string().required(),
-  duration: Joi.number().min(1).required(), // Minutes
+  term: Joi.string().required(),
+  session: Joi.string().required(),
+  duration: Joi.number().min(1).required(),
   startTime: Joi.date().iso().required(),
-  term: Joi.string().required().messages({ 'any.required': 'Academic Term is required' }),
-  session: Joi.string().required().messages({ 'any.required': 'Academic Session is required' }),
   endTime: Joi.date().iso().min(Joi.ref('startTime')).required(),
   targetClass: Joi.string().required(),
-  questionIds: Joi.array().items(Joi.string()).min(1).required().messages({
-    'array.min': 'You must link at least one question to this exam'
-  }),
+  questionIds: Joi.array().items(Joi.string()).min(1).required(),
   passPercentage: Joi.number().min(0).max(100).default(50),
   sebRequired: Joi.boolean().default(false),
   shuffleQuestions: Joi.boolean().default(true),
   allowBacktrack: Joi.boolean().default(true),
   status: Joi.string().valid('draft', 'published', 'closed').default('published')
 });
-
 
 // 3. Validation for Student Submission
 const examSubmissionSchema = Joi.object({
